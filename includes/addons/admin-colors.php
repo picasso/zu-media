@@ -1,11 +1,12 @@
 <?php
+
 class zu_MediaAdminColors extends zukit_Addon {
 
 	private $schemes = [
-		'zu-wine'			=> 	'Zu Wine',
-		'zu-green-gold'		=>	'Zu Green Gold',
-		'zu-ocean'			=>	'Zu Ocean',
-		'zu-ola'			=>	'Zu Ola',
+		'zu-wine'			=> 'Zu Wine',
+		'zu-green-gold'		=> 'Zu Green Gold',
+		'zu-ocean'			=> 'Zu Ocean',
+		'zu-ola'			=> 'Zu Ola',
 	];
 
 	private $color_keys = ['base', 'highlight', 'notification', 'action'];

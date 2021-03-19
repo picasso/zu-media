@@ -69,6 +69,7 @@ trait zu_MediaFolderHelpers {
 	}
 
 	private function generate_tree($terms, $parent = 0, $depth = 0, $limit = 0) {
+		if($this->check_error($terms)) return [];
 		if($limit > 100) return '';  // Prevent an endless recursion
 		$tree = [];
 		for($i = 0, $ni = count($terms); $i < $ni; $i++) {
@@ -109,7 +110,7 @@ trait zu_MediaFolderHelpers {
 			'attachments'			=> 0,
 			'errors'				=> 0,
 		];
-		// сначала создаем массив всех значений  'id' для folders таксономии
+		// first create an array of all the 'id' values for the taxonomy folders
 		$folders = array_map(function($folder) { return $folder['id']; }, $this->get_folders());
 
 		// then search and fix orphaned attachments
@@ -200,10 +201,10 @@ trait zu_MediaFolderHelpers {
 		if(!taxonomy_exists($from_taxonomy)) $this->register_taxonomy($from_taxonomy);
         $from_terms = $this->generate_sorted_tree($from_taxonomy);
 
-		// сбрасываем текущую таксономию на изначальное состояние
+		// Reset the current taxonomy to its original state
 		$this->reset_taxonomy();
 		$converted = ['0' => 0];
-		// сначала создаем копиии всех term под новой таксономией
+		// First create copies of all terms under the new taxonomy
 		foreach($from_terms as $term) {
 			$result = wp_insert_term($term->name, $this->folders_category, ['parent' => $converted[$term->parent]]);
 			if($this->check_error($result, true, $report)) return false;
@@ -211,7 +212,7 @@ trait zu_MediaFolderHelpers {
 			$report['converted_terms'] += 1;
 		}
 
-		// затем обновляем slug для новых terms
+		// Then update the slug for new terms
 		foreach($from_terms as $term) {
 			$converted_id = $converted[$term->term_id];
 			$converted_term = get_term($converted_id, $this->folders_category);
@@ -224,7 +225,7 @@ trait zu_MediaFolderHelpers {
 			if($this->check_error($result, true, $report)) return false;
 		}
 
-		// и когда все новым terms созданы и упорядочены -> update attachments
+		// and when all new terms are created and sorted -> update attachments
 		$attachments = $this->call('get_attachments');
         foreach($attachments as $attachment_id) {
 			$item_terms = get_the_terms($attachment_id, $from_taxonomy);
@@ -241,7 +242,7 @@ trait zu_MediaFolderHelpers {
 			}
         }
 
-		// удалить предыдущую категорию если $remove is true
+		// Remove the previous category if $remove is true
 		if($remove) {
 			$this->reset_taxonomy($from_taxonomy, false, $from_terms);
 			$report['removed_taxonomy'] = $from_taxonomy;

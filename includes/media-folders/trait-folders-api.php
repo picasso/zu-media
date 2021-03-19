@@ -8,9 +8,11 @@ trait zu_MediaFolderAPI {
 	private $rewrite_key = 'albums';
 	private $folders = [];
 	private $galleries = [];
+	private $private_images = [];
 
 	private function update_cached() {
 		// Cache existing folders & galleries
+		// folders should always be the first since 'private' images are created there
 		$this->folders = $this->get_folders();
 		$this->galleries = $this->get_galleries();
 		$this->add_folder_rewrite();
@@ -29,7 +31,7 @@ trait zu_MediaFolderAPI {
 	public function get_folder_by_image_id($image_id) {
 
 		foreach($this->folders as $folder) {
-			if(in_array(strval($image_id), $folder['images'] ?? null)) return $folder;
+			if(in_array(absint($image_id), $folder['images'] ?? null)) return $folder;
 		}
 		return [];
 	}
@@ -37,33 +39,42 @@ trait zu_MediaFolderAPI {
 	public function get_folder_by_id($folder_id, $get_parent_from = []) {
 
 		$as_parent_id = empty($get_parent_from) ? false : true;
+		$folder_id = absint($folder_id);
 
 		foreach(($as_parent_id ? $get_parent_from : $this->folders) as $folder) {
-			if($folder_id == $folder[$as_parent_id ? 'parent_id' : 'id']) return $folder;
+			if($folder_id === $folder[$as_parent_id ? 'parent_id' : 'id']) return $folder;
 		}
 		return [];
 	}
 
-	public function get_folders($parent_id = 0) {
+	private function get_childs($terms, $parent_id = 0) {
+		$childs = [];
+		foreach($terms as $folder) {
+			if($folder->parent === $parent_id) {
+				$childs[] = (int)$folder->term_id;
+				$grand_childs = $this->get_childs($terms, (int)$folder->term_id);
+				array_push($childs, ...$grand_childs);
+			}
+		}
+		return $childs;
+	}
+
+	public function get_folders() {
 
 		$folders = $this->call('get_cached', 'folders');
 
-		if($folders !== false) return $parent_id == 0 ? $folders : $this->get_folder_by_id($parent_id, $folders);
+		if($folders !== false) return $folders;
 
-		$folders = $have_childs = [];
-
-        $terms = $this->get_folder_terms($parent_id);
-        if($this->check_error($terms)) return $folders;
+		$folders = [];
+		$terms = $this->generate_sorted_tree();
 
         foreach($terms as $folder) {
 	        $folder_id = (int)$folder->term_id;
-            $folder_childs = get_term_children($folder_id, $this->folders_category);
-			if($this->check_error($folder_childs)) return $folders;
+			$folder_childs = $this->get_childs($terms, $folder_id);
 
             $folder_images = get_objects_in_term($folder_id, $this->folders_category);
 			if($this->check_error($folder_images)) return $folders;
 
-			$have_childs = empty($folder_childs) ? $have_childs : array_merge($have_childs, [$folder_id]);
             $folders[] = [
             	'title' 		=> $folder->name,
             	'id' 			=> $folder_id,
@@ -71,19 +82,13 @@ trait zu_MediaFolderAPI {
             	'parent_id' 	=> (int)$folder->parent,
             	'childs_count' 	=> count($folder_childs),
             	'childs' 		=> $folder_childs,
-            	'images' 		=> $folder_images,
+            	'images' 		=> wp_parse_id_list($folder_images),
+				'meta'			=> $this->get_folder_meta($folder_id, false),
             ];
 	    }
 
-	    foreach($have_childs as $folder_id) {
-			$child_folders = $this->get_folders($folder_id);
-			$folders = array_merge($folders, $child_folders);
-		}
-
-		if($parent_id == 0) {
-			$this->call('set_cached', 'folders', $folders);
-		}
-
+		$this->call('set_cached', 'folders', $folders);
+		$this->private_images = $this->get_private_images($folders);
 		return $folders;
 	}
 
@@ -97,35 +102,28 @@ trait zu_MediaFolderAPI {
 				$images = array_merge($images, $child_images);
 			}
 		}
-		return $images;
+		return array_map('absint', $images);
 	}
 
-	// Private folders --------------------------------------------------------]
+	// Private(locked) folders ------------------------------------------------]
 
 	public function is_private_folder($folder) {
-		// if album title is equal to '_private' returns 1, if album title only contains '_private' returns 2, otherwise false
-		return (isset($folder['title'])
-			&& stripos($folder['title'], '_private') !== false) ? (
-				strlen($folder['title']) == 8 ? 1 : 2
-			) : false;
+		return $folder['meta']['lock'] ?? false;
 	}
 
-	public function get_private_images() {
-
-		$folders = $this->get_folders();
+	public function get_private_images($all_folders = null) {
+		$folders = $all_folders ?? $this->get_folders();
+		$private = [];
 		foreach($folders as $folder) {
-			$images = array_map('absint', $this->get_all_images_in_folder($folder));
-			if($this->is_private_folder($folder)) $private = empty($private) ? $images : array_merge($private, $images);
+			if($this->is_private_folder($folder)) {
+				$private = array_merge($private, $this->get_all_images_in_folder($folder));
+			}
 		}
-		return empty($private) ? [] : array_unique($private);
+		return array_unique($private);
 	}
 
 	public function is_private_image($image_id) {
-		global $_mplus_private_images;
-
-		if(empty($_mplus_private_images)) $_mplus_private_images = $this->get_private_images();
-
-		return in_array($image_id, $_mplus_private_images);
+		return in_array(absint($image_id), $this->private_images);
 	}
 
 	// Galleries --------------------------------------------------------------]
@@ -138,11 +136,11 @@ trait zu_MediaFolderAPI {
 
 		$galleries = $images = [];
 		$gallery_type = $this->get_option('gallery_type', 'pages');
-		// 	$gallery_type может быть:
-		// 		- либо 'posts' с установленным форматом 'gallery'
-		// 		- либо все 'pages' (крайне неэффективно)
-		// 		- либо 'pages' которые имеют родителя и у родителя 'slug' соответсвует одному из вариантов
- 		// 			выбранному пользователем (portfolio, gallery, photos, albums, images)
+		// 	$gallery_type can be:
+		// 		- or 'posts' with the format set to 'gallery'
+		// 		- or all 'pages' (highly inefficient)
+		// 		- or 'pages' which have a parent and the parent 'slug' matches one of the options
+		// 			selected by user (portfolio, gallery, photos, albums, images)
 		if($gallery_type === 'posts') 	{
 
 			$args = [];
@@ -187,8 +185,7 @@ trait zu_MediaFolderAPI {
 		}
 
 		if(empty($post_id)) {
-			$private_images = $this->get_private_images();
-			$galleries['all'] = empty($private_images) ? $images : array_diff_key($images, array_flip($private_images));
+			$galleries['all'] = empty($this->private_images) ? $images : array_diff_key($images, array_flip($this->private_images));
 			$this->call('set_cached', 'galleries', $galleries);
 		}
 		return $galleries;

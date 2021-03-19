@@ -3,8 +3,9 @@ class zu_MediaImageSizes extends zukit_Addon {
 
 	private $sizes;
 	private $wp_sizes;
+	private $modified_color = '#ce52b4';
 
-	private static $backup_key =  'zumedia_backup_sizes';
+	private static $backup_key = 'zumedia_backup_sizes';
 	private static $zu_sizes_key = 'zumedia_image_sizes';
 	private static $wp_keys = ['thumbnail', 'medium', 'medium_large', 'large'];
 
@@ -44,10 +45,11 @@ class zu_MediaImageSizes extends zukit_Addon {
 	}
 
 	public function init() {
-		$this->sizes = self::get_all_sizes();
+		$this->sizes = $this->get_all_cached_sizes();
 		if($this->is_plugin_option('responsive')) {
 			$sizes_to_create = $this->get_sizes_to_create();
 			$this->create_sizes($sizes_to_create);
+			$this->sizes = array_merge($this->sizes, $sizes_to_create);
 		}
 	}
 
@@ -62,6 +64,13 @@ class zu_MediaImageSizes extends zukit_Addon {
 				   $sizes_to_create = $this->without_wp_sizes();
 			}
 		} else $sizes_to_create = $this->without_wp_sizes();
+
+		// convert to table output format
+		$zu_keys = array_keys(self::$zu_sizes);
+		foreach($sizes_to_create as $size_key => $size) {
+			$sizes_to_create[$size_key]['zu'] = in_array($size_key, $zu_keys);
+			$sizes_to_create[$size_key]['wp'] = in_array($size_key, self::$wp_keys);
+		}
 
 		return $sizes_to_create;
 	}
@@ -79,8 +88,6 @@ class zu_MediaImageSizes extends zukit_Addon {
 			// Create new images size
 			add_image_size($name, $size['width'], $size['height'], $crop);
 		}
-
-		$this->sizes = self::get_all_sizes();
 	}
 
 	private function without_wp_sizes() {
@@ -117,11 +124,24 @@ class zu_MediaImageSizes extends zukit_Addon {
 		return $zu_sizes;
 	}
 
+	public function get_all_cached_sizes() {
+		$sizes = $this->call('get_cached', 'sizes');
+		if($sizes !== false) return $sizes;
+
+		$sizes = self::get_all_sizes();
+		$this->call('set_cached', 'sizes', $sizes);
+		return $sizes;
+	}
+
 	// Create table with all sizes --------------------------------------------]
 
 	public function ajax($action, $value) {
 		if($action === 'zumedia_all_sizes') return $this->generate_table();
 		else return null;
+	}
+
+	private function modified_style() {
+		return ['color' => $this->modified_color];
 	}
 
 	private function generate_table() {
@@ -133,19 +153,20 @@ class zu_MediaImageSizes extends zukit_Addon {
 
 		function asKind($wp, $zu, $is_modified, $icon) {
 			$tooltip = $wp ?
-				($is_modified ? __('Wordpress [modified]', 'zumedia') : __('Wordpress', 'zumedia')) :
-				($zu ? __('Zu Media', 'zumedia') : __('Third Party', 'zumedia'));
+				($is_modified ? __('Wordpress [modified]', 'zu-media') : __('Wordpress', 'zu-media')) :
+				($zu ? __('Zu Media', 'zu-media') : __('Third Party', 'zu-media'));
 
 			return [
 				'tooltip'	=> $tooltip,
 				'dashicon'	=> $wp ? ($is_modified ? 'wordpress' : 'wordpress-alt') : ($zu ? null : 'admin-plugins'),
 				'svg'		=> $zu ? $icon : null,
+				'style'		=> $is_modified,
 			];
 		}
 
 		function asCrop($crop) {
 			$crop = is_numeric($crop) || is_bool($crop) ? (bool)$crop : (implode(' ,', $crop) ?? '?');
-			$tooltip = is_string($crop) ? $crop : ($crop ? __('Yes', 'zumedia') : __('No', 'zumedia'));
+			$tooltip = is_string($crop) ? $crop : ($crop ? __('Yes', 'zu-media') : __('No', 'zu-media'));
 
 			return [
 				'tooltip'	=> $tooltip,
@@ -160,14 +181,14 @@ class zu_MediaImageSizes extends zukit_Addon {
 		$table->classes(['kind', 'crop'], '__zu_icon');
 
 		$rows = [];
-		$zu_icon = $this->get('icon', true);
+		$zu_icon = $this->get('appearance.icon', true);
 		$original = get_option(self::$backup_key, null);
 
 		foreach($this->sizes as $name => $size) {
 			$is_modified = $original && $size['wp'] && $size['width'] != $original[$name]['width'];
-			$table->iconcell('kind', asKind($size['wp'], $size['zu'], $is_modified, $zu_icon));
+			$table->iconcell('kind', asKind($size['wp'], $size['zu'], $is_modified ? $this->modified_style() : null, $zu_icon));
 			$table->cell('name', $name);
-			$table->cell('width', asSize($size['width']), $is_modified ? ['color' => 'red'] : null);
+			$table->cell('width', asSize($size['width']), $is_modified ? $this->modified_style() : null);
 			$table->cell('height', asSize($size['height']));
 			$table->iconcell('crop', asCrop($size['crop']));
 

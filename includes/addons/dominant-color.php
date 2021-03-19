@@ -50,7 +50,8 @@ class zu_MediaDominant extends zukit_Addon {
 		// Calculate the dominant color
 		// Thanks to @onion2k on http://forums.devnetwork.net/viewtopic.php?t=39594
 
-		// 	$i = imagecreatefromjpeg($path);  // works for jpeg only
+		// 	$i = imagecreatefromjpeg($path);
+		// works for jpeg only
 		$i = @imagecreatefromstring(file_get_contents($path));
 		if($i === false) return self::default_color();
 
@@ -103,11 +104,11 @@ class zu_MediaDominant extends zukit_Addon {
 		// Add fields to media uploader
 		$form_fields[$this->meta_key] = [
 			'label' => 'Dominant Color',
-			'input' => 'html', //'text',
+			'input' => 'html',
 			'value' => $this->get_dominant_by_attachment_id($post->ID),
 			'helps' => 'Use "?" to regenerate dominant color of the image',
             'html'  =>
-				sprintf(
+				zu_sprintf(
 					'<input
 						name="attachments[%1$s][%2$s]"
 						metaid="%1$s"
@@ -125,7 +126,6 @@ class zu_MediaDominant extends zukit_Addon {
 	}
 
 	public function save_attachment_field($post, $attachment) {
-
 		// Save values in media uploader
 		if(isset($attachment[$this->meta_key])) {
 			$color = sanitize_text_field($attachment[$this->meta_key]);
@@ -135,10 +135,9 @@ class zu_MediaDominant extends zukit_Addon {
 		return $post;
 	}
 
-	// Useful functions -------------------------------------------------------]
+	// Public API for Dominant Color ------------------------------------------]
 
 	public function get_dominant_by_attachment_id($attachment_id) {
-
 		$meta = get_post_meta($attachment_id, $this->meta_key, true);
 		return empty($meta) ? self::default_color() : $meta;
 	}
@@ -159,6 +158,7 @@ class zu_MediaDominant extends zukit_Addon {
 
 		$images_count = 0;
 
+		// NOTE: for tests - it takes a very long time to update dominants for many images, so only the first 15
 		// $attachments = array_slice($attachments, 0, 15);
 
 		if($attachments) {

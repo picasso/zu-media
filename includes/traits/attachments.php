@@ -1,6 +1,4 @@
 <?php
-// NOTE: разобраться с zuplus_options_updated
-// NOTE: разобраться с $_mplus_caq, $_mplus_cache_time
 
 // Attachments helpers --------------------------------------------------------]
 
@@ -14,26 +12,27 @@ trait zu_MediaAttachments {
 
 	private $cachekeys = [
 		'attachments'	=> 'attachments',
+		'sizes'			=> 'sizes',
 		'folders'		=> 'folders',
 		'galleries'		=> 'galleries',
 	];
 
 	private function init_cachekeys() {
-		// global $_mplus_caq, $_mplus_cache_time;
-
 		$prefix = $this->prefix;
 		$versionkey = str_replace('.', '_', $this->version);
 
 		$this->cachekeys['attachments'] = sprintf('%s_cad_%s', $prefix, $versionkey);
-		$this->cachekeys['folders'] = sprintf('%s_folders_%s_%s', $prefix, $versionkey, $this->snippets('get_lang', 'none'));
-		$this->cachekeys['galleries'] = sprintf('%s_galleries_%s_%s', $prefix, $versionkey, $this->snippets('get_lang', 'none'));
-
-		// $_mplus_caq = $this->cachekeys['attachments'];
-		// $_mplus_cache_time = $this->cache_time;
+		$this->cachekeys['sizes'] = sprintf('%s_sizes_%s', $prefix, $versionkey);
+		$this->cachekeys['folders'] = sprintf('%s_folders_%s_%s', $prefix, $versionkey, $this->snippets('get_lang', 'nolang'));
+		$this->cachekeys['galleries'] = sprintf('%s_galleries_%s_%s', $prefix, $versionkey, $this->snippets('get_lang', 'nolang'));
 
 		add_action('add_attachment', [$this, 'reset_cached']);			// reset all cached when new image added
 		add_action('delete_attachment', [$this, 'reset_cached']);		// or deleted
-		// add_action('zuplus_options_updated', [$this, 'reset_cached']);	// or when options updated
+
+		// reset all cached
+		add_action('zumedia_reset_cached', [$this, 'reset_cached']);
+		// reset cached collections only (folders, galleries)
+		add_action('zumedia_reset_collections', [$this, 'reset_cached_collections']);
 	}
 
 	private function init_baseurl() {
@@ -45,8 +44,11 @@ trait zu_MediaAttachments {
 	private function get_cached_memory($stats) {
 		// no accurate, but an easy way to find memory used by an cached objects
 		$attachments_cached = $this->is_option('disable_cache') ? 0 : strlen(serialize($this->get_attachments(false)));
-		$cached_memory = ($stats['memory'] ?? 0) + $attachments_cached;
-		return $this->snippets('format_bytes', $cached_memory, 1);
+		$sizes_cached = $this->is_option('disable_cache') ? 0 : $this->get_cached('sizes');
+		if($sizes_cached !== 0) $sizes_cached = $sizes_cached !== false ? strlen(serialize($sizes_cached)) : 0;
+
+		$cached_memory = ($stats['memory'] ?? 0) + $attachments_cached + $sizes_cached;
+		return $this->snippets('format_bytes', $cached_memory, 1, true);
 	}
 
 	public function get_cached($cachekey) {
@@ -62,19 +64,27 @@ trait zu_MediaAttachments {
 		if(isset($this->cachekeys[$cachekey])) delete_transient($this->cachekeys[$cachekey]);
 	}
 
-	public function reset_cached() {
+	public function reset_cached($collections_only = false) {
 		$stats = $this->folders ? $this->folders->stats() : [];
 		$cached_memory = $this->get_cached_memory($stats);
 
-		$this->delete_cached('attachments');
-		$this->delete_cached('folders');
-		$this->delete_cached('galleries');
+		foreach($this->cachekeys as $cachekey) {
+			if($collections_only) {
+				if(in_array($cachekey, ['folders', 'galleries'])) delete_transient($cachekey);
+			} else {
+				delete_transient($cachekey);
+			}
+		}
 
 		$message = sprintf(
 			'All cached data were cleared%1$s.',
 			empty($stats) ? '' : sprintf(' (<strong>%1$s, %2$s</strong>)', $stats['info'], $cached_memory)
 		);
 		return $this->create_notice('success', $message);
+	}
+
+	public function reset_cached_collections() {
+		return $this->reset_cached(true);
 	}
 
 	public function get_attachments($keys_only = true) {
@@ -104,7 +114,8 @@ trait zu_MediaAttachments {
 				$attachments[$post_id] = [];
 				$attachments[$post_id]['file'] = basename($meta['file']);
 				$attachments[$post_id]['cropped'] = wp_list_pluck($meta['sizes'], 'file');
-				$attachments[$post_id]['landscaped'] = ($image !== false && $this->is_landscape($image[1], $image[2])) ? true : false;
+				$attachments[$post_id]['landscaped'] = ($image !== false
+															&& $this->is_landscape($image[1], $image[2])) ? true : false;
 			}
 			$this->set_cached('attachments', $attachments);
 		}
@@ -134,7 +145,6 @@ trait zu_MediaAttachments {
 				}
 			}
 		}
-
 		return $attachment_id;
 	}
 
@@ -154,7 +164,6 @@ trait zu_MediaAttachments {
 
 			$attachment_id = $this->attachment_id_from_url($imgsrc, $attachments);
 		}
-
 		return $attachment_id;
 	}
 
@@ -162,10 +171,18 @@ trait zu_MediaAttachments {
 
 		$result = wp_delete_attachment($attachment_id);
 
-		if($result === false) return $this->create_notice('error', sprintf('Failed to delete attachment with ID <strong>%1$s</strong>', $attachment_id));
+		if($result === false) return $this->create_notice(
+			'error',
+			sprintf('Failed to delete attachment with ID <strong>%1$s</strong>',
+			$attachment_id)
+		);
 		else {
 			$title = $this->snippets('convert_lang_text', $result->post_title) ?? $result->post_title;
-			$message = sprintf('Attachment <span>"%1$s"</span> with ID <strong>%2$s</strong> was deleted', $title, $attachment_id);
+			$message = sprintf(
+				'Attachment <span>"%1$s"</span> with ID <strong>%2$s</strong> was deleted',
+				$title,
+				$attachment_id
+			);
 			return $this->create_notice('success', $message);
 		}
 	}
@@ -184,7 +201,11 @@ trait zu_MediaAttachments {
 		} else {
 			$title = get_the_title($attachment_id);
 			$title = $this->snippets('convert_lang_text', $title) ?? $title;
-			$message = sprintf('Attachment <span>"%1$s"</span> with ID <strong>%2$s</strong> was detached', $title, $attachment_id);
+			$message = sprintf(
+				'Attachment <span>"%1$s"</span> with ID <strong>%2$s</strong> was detached',
+				$title,
+				$attachment_id
+			);
 			return $this->create_notice('success', $message);
 		}
 	}

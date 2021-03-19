@@ -1,4 +1,6 @@
 <?php
+// NOTE: разобраться с mplus_get_location_as_text()
+// раньше это добавлялось вместе с ratio field но логично перенести это сюда (если еще нужно?)
 
 // Location helpers -----------------------------------------------------------]
 
@@ -28,6 +30,8 @@ trait zu_MediaLocation {
 	        'show_admin_column' 	=> 'true',
 	    ];
 	    register_taxonomy('location', 'attachment', $args);
+
+		// add_filter('attachment_fields_to_edit', [$this, 'location_field_edit'], 10, 2);
 	}
 
 	protected function get_location_terms($post_id) {
@@ -83,7 +87,7 @@ trait zu_MediaLocation {
 				// without languages
 				foreach($locations as $slug => $location) {
 					$location = sprintf($format, $location);
-					if($with_link) $location = sprintf(
+					if($with_link) $location = zu_sprintf(
 						'<a href="%2$s" class="zu-location-link">%1$s</a>',
 						$location,
 						get_term_link($slug, 'location')
@@ -100,7 +104,7 @@ trait zu_MediaLocation {
 						$text .= sprintf('[:%1$s]%2$s', $lang, $location_name);
 					}
 					$location = sprintf($format, $text .'[:]');
-					if($with_link) $location = sprintf(
+					if($with_link) $location = zu_sprintf(
 						'<a href="%2$s" class="zu-location-link">%1$s</a>',
 						$location,
 						get_term_link($slug, 'location')
@@ -129,5 +133,37 @@ trait zu_MediaLocation {
 		$locations = implode($glue, $locations);
 
 		return (empty($lang) || $lang == -1) ? $locations : $this->snippets('convert_lang_text', $locations, $lang);
+	}
+
+	public function location_field_edit($form_fields, $post) {
+
+		// $meta_key = $this->field_key();
+		//
+		// $meta_params = [
+		// 	'label'			=> __('Media Ratio', 'zu-media'),
+		// 	'show_in_edit' 	=> true,
+		// 	'show_in_modal' => true,
+		// 	'helps' 		=> '',
+		// 	'input' 		=> 'html',
+		// 	'html' 			=> zu_sprintf(
+		// 		'<input name="attachments[%1$s][%2$s]"
+		// 			metaid="%1$s"
+		// 			id="attachments-%1$s-%2$s"
+		// 			class="mplus_metaid"
+		// 			type="text"
+		// 			value="%3$s" readonly>',
+		// 		$post->ID,
+		// 		$meta_key,
+		// 		$this->get_ratio_name($post->ID)
+		// 	)
+		// ];
+		//
+		// $form_fields[$meta_key] = $meta_params;
+		// keep location values for JS
+		// NOTE: разобраться с mplus_get_location_as_text
+		// $form_fields[$meta_key]['html'] .=  sprintf(
+		// '<div class="qtx-location" style="display:none">%1$s</div>', mplus_get_location_as_text($post->ID, -1));
+
+		// return $form_fields;
 	}
 }

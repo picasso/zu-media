@@ -1,12 +1,10 @@
 <?php
-// NOTE: get_all_landscaped??
-// NOTE: разобраться с mplus_get_location_as_text()
 
 // Ratio helpers --------------------------------------------------------------]
 
 trait zu_MediaRatio {
 
-	// погрешности сравнения ratio
+	// deviations for comparison with ratio
 	private $ratio_e1 = 0.02;
 	private $ratio_e2 = 0.07;
 
@@ -20,41 +18,30 @@ trait zu_MediaRatio {
 		'17:6'			=> 	0.35,
 	];
 
+	private $all_landscaped = [];
+
 	private function init_media_ratio() {
 		add_filter('attachment_fields_to_edit', [$this, 'fields_edit'], 10, 2);
 		add_filter('attachment_fields_to_save', [$this, 'fields_save'], 10, 2);
 	}
 
-	// куда эту девать?
-	public function get_all_landscaped() {
-		global $_mplus_all_landscaped;
-
-		if(empty($_mplus_all_landscaped)) {
-			$_mplus_all_landscaped = array_keys(array_filter($this->get_attachments(false),
-				function($val) { return  $val['landscaped']; }
-			));
-		}
-
-		return $_mplus_all_landscaped;
-	}
-
-	public function is_landscape($width, $height, $limit = '3:2') {
-		return $this->check_ratio($limit, $width, $height, false, true);
-	}
-
 	private function check_ratio($name, $width, $height, $strict_check = false, $and_less = false) {
-
+		// first we assume that the horizontal ratio '$name' is height to width, that is, like 3:2
 		$value = $this->ratio_names[$name] ?? 0;
 		$ratio = $height / $width;
 
-		if($value == 0) {
+		// if $value is 0, then we try the opposite (vertical) ratio, that is, width to height (like 2:3)
+		if($value === 0) {
 			$name_sizes = explode(':', $name);
 			$name = count($name_sizes) === 2 ? $name_sizes[1].':'.$name_sizes[0] : '';
 			$value = $this->ratio_names[$name] ?? 0;
 			$ratio = $width / $height;
 		}
 
+		// if "strict" check, then the deviation is very small (ratio_e1)
 		$e = $strict_check ? $this->ratio_e1 : $this->ratio_e2;
+		// if $and_less is true, then $ratio will be whatever is less than the specified "ratio" (taking into account the deviation)
+		// otherwise, return true only if the $ratio is equal to the specified "ratio" (plus/minus the deviation)
 		return $and_less ? ($ratio < ($value + $e) ? true : false) : (($ratio < ($value + $e) && $ratio > ($value - $e)) ? true : false);
 	}
 
@@ -87,40 +74,75 @@ trait zu_MediaRatio {
 		return sprintf('%2$s%1$s_media_ratio', $this->prefix, $for_meta ? '_' : '');
 	}
 
+	private function save_ratio($attachment_id, $value) {
+		update_post_meta($attachment_id, $this->field_key(true), $value);
+	}
+
 	public function fields_edit($form_fields, $post) {
 		// Add a custom field to an attachment in WordPress
 		$meta_key = $this->field_key();
-
-		// NOTE: not used, only to show how get meta value
-		// $meta_key_value = get_post_meta($post->ID, $this->field_key(true), true);
+		$meta_value = $this->get_ratio($post->ID);
 
 		$meta_params = [
-			'label'			=> __('Media Ratio', 'zumedia'),
+			'label'			=> __('Media Ratio', 'zu-media'),
 			'show_in_edit' 	=> true,
 			'show_in_modal' => true,
 			'helps' 		=> '',
 			'input' 		=> 'html',
-			'html' 			=> sprintf(
-				'<input name="attachments[%1$s][%2$s]" metaid="%1$s" id="attachments-%1$s-%2$s" class="mplus_metaid" type="text" value="%3$s" readonly>',
+			'html' 			=> zu_sprintf(
+				'<input name="attachments[%1$s][%2$s]"
+					metaid="%1$s"
+					id="attachments-%1$s-%2$s"
+					class="mplus_metaid"
+					type="text"
+					value="%3$s" readonly>',
 				$post->ID,
 				$meta_key,
-				$this->get_ratio_name($post->ID)
+				$meta_value
 			)
 		];
 
 		$form_fields[$meta_key] = $meta_params;
-
-		// keep location values for JS
-		// NOTE: разобраться с mplus_get_location_as_text
-		// $form_fields[$meta_key]['html'] .=  sprintf('<div class="qtx-location" style="display:none">%1$s</div>', mplus_get_location_as_text($post->ID, -1));
-
 		return $form_fields;
 	}
 
 	public function fields_save($post, $attachment) {
 		// Save custom field to post_meta
 		$meta_key = $this->field_key();
-		if(isset($attachment[$meta_key])) update_post_meta($post['ID'], $this->field_key(true), $attachment[$meta_key]);
+		if(isset($attachment[$meta_key])) $this->save_ratio($post['ID'], $attachment[$meta_key]);
 		return $post;
 	}
+
+	// Public interface for ratio field ---------------------------------------]
+
+	public function get_ratio($post_or_attachment_id = null) {
+		$attachment_id = $this->snippets('get_attachment_id', $post_or_attachment_id);
+		$ratio_value = get_post_meta($attachment_id, $this->field_key(true), true);
+		if($ratio_value !== false && empty($ratio_value)) {
+			$ratio_value = $this->get_ratio_name($attachment_id);
+			$this->save_ratio($attachment_id, $ratio_value);
+		}
+		return $ratio_value;
+	}
+
+	public function is_landscape($post_or_attachment_id = null, $limit = '3:2') {
+		$attachment_id = $this->snippets('get_attachment_id', $post_or_attachment_id);
+		$metadata = wp_get_attachment_metadata($attachment_id);
+		if(empty($metadata)) return false;
+		return $this->is_landscape_ratio(absint($metadata['width']), absint($metadata['height']), $limit);
+	}
+
+	public function is_landscape_ratio($width, $height, $limit = '3:2') {
+		return $this->check_ratio($limit, $width, $height, false, true);
+	}
+
+	public function get_all_landscaped() {
+		if(empty($this->all_landscaped)) {
+			$this->all_landscaped = array_keys(array_filter($this->get_attachments(false),
+				function($val) { return  $val['landscaped'] ?? false; }
+			));
+		}
+		return $this->all_landscaped;
+	}
+
 }

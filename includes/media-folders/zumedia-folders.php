@@ -1,7 +1,7 @@
 <?php
-// Add folders to Media Library
+// Adds support for folders to the Media Library
 // Author: Dmitry Rudakov
-// Created 17/07/2020
+// Created: 17/07/2020
 
 include_once('trait-folders-helpers.php');
 include_once('trait-folders-ajax.php');
@@ -25,13 +25,25 @@ class zu_MediaFolder extends zukit_Addon {
 			'options'			=> [
 				'selectedId'		=> 0,
 				'non_empty'			=> false,
+				'hide_root'			=> false,
+				'root_icon'			=> true,
+				'anim_speed'		=> 200,
+				'anim_easing'		=> 'swing',
+				'color'				=> 'wp',
+				'colored_tree'		=> true,
 				'icons'				=> [
+					'lock'			=> 'dashicons-lock',
+					'unlock'		=> 'dashicons-unlock',
+	            	'badge'			=> 'dashicons-admin-generic',
+					'color'			=> 'dashicons-admin-appearance',
 	                'edit'			=> 'dashicons-edit-large',
 	            	'delete'		=> 'dashicons-trash',
+
 	                'back'			=> 'dashicons-editor-break',
 	                'breadcrumb'	=> 'dashicons-arrow-right-alt2',
 	                'home' 			=> 'dashicons-admin-home',
-	                'folder' 		=> 'dashicons-images-alt2',
+	                'folder' 		=> 'dashicons-images-alt',
+					'svg'			=> 'zu',
 	            ],
 			],
 		];
@@ -62,18 +74,24 @@ class zu_MediaFolder extends zukit_Addon {
 		if(in_array($hook, ['upload.php', 'post.php', 'post-new.php', 'customize.php', 'widgets.php'])) {
 
 			$data = $this->collect_script_data();
-			// нельзя помещать скрипт в 'bottom' иначе фильтр для категорий 'привяжется'
-			// слишком поздно к Media Library -> поэтому $bottom = false
-			$this->admin_enqueue_script('folders', $data, [
-				'plupload',
-				'lodash',
-				'jquery-ui-draggable',
-				'jquery-ui-droppable',
-				'jquery-ui-dialog',
-			], false);
+			// cannot put the script in the footer otherwise the filter for the categories
+			// will "bind" too late to Media Library -> therefore 'bottom' => false
+			$this->admin_enqueue_script('folders', [
+				'data'		=> $data,
+				'bottom'	=> false,
+				'deps'		=> [
+					'plupload',
+					'lodash',
+					'jquery-ui-draggable',
+					'jquery-ui-droppable',
+					'jquery-ui-dialog',
+				],
+			]);
 			// prefix will be added to script name automatically
 			$this->admin_enqueue_style('folders');
 		}
+		// add styles only for Settings Page (needed for Folders Preview)
+		if($this->ends_with_slug($hook)) $this->admin_enqueue_style('folders');
 	}
 
 	private function collect_script_data() {
@@ -82,7 +100,7 @@ class zu_MediaFolder extends zukit_Addon {
 		$terms = $this->generate_sorted_tree();
 
 		$attachment_terms = [
-			[ 'id' => 0, 'label' => __('No Categories', 'zumedia'), 'slug' => '', 'parent_id' => 0],
+			[ 'id' => 0, 'label' => __('No Categories', 'zu-media'), 'slug' => '', 'parent_id' => 0],
 		];
 
 		foreach($terms as $term) {
@@ -91,6 +109,7 @@ class zu_MediaFolder extends zukit_Addon {
 				'label' 		=> $term->name,
 				'parent_id' 	=> $term->category_parent,
 				'depth' 		=> $term->depth,
+				'meta'			=> $this->get_folder_meta($term->term_id),
 			];
 		}
 
@@ -108,19 +127,19 @@ class zu_MediaFolder extends zukit_Addon {
 			'options'			=> $this->options(),
 
 			'lang' 				=> [
-				'rootSelect'		=> __('No Categories', 'zumedia'),
-				'rootTree'			=> __('Media Library', 'zumedia'),
-				'backButton'		=> __('Back', 'zumedia'),
-				'create'			=> __('Create', 'zumedia'),
-				'createFolder'		=> __('Create Folder', 'zumedia'),
-				'createPrompt'		=> __('New Folder', 'zumedia'),
-				'createAlert'		=> __('Please give a name to the folder you are creating', 'zumedia'),
-				'rename'			=> __('Rename', 'zumedia'),
-				'renameFolder'		=> __('Rename Folder', 'zumedia'),
-				'renameAlert'		=> __('Please give a new name to this folder', 'zumedia'),
-				'delete'			=> __('Delete', 'zumedia'),
-				'deleteFolder'		=> __('Delete folder?', 'zumedia'),
-				'deleteAlert'		=> __('This will delete the folder "%s".', 'zumedia'),
+				'rootSelect'		=> __('No Categories', 'zu-media'),
+				'rootTree'			=> __('Media Library', 'zu-media'),
+				'backButton'		=> __('Back', 'zu-media'),
+				'create'			=> __('Create', 'zu-media'),
+				'createFolder'		=> __('Create Folder', 'zu-media'),
+				'createPrompt'		=> __('New Folder', 'zu-media'),
+				'createAlert'		=> __('Please give a name to the folder you are creating', 'zu-media'),
+				'rename'			=> __('Rename', 'zu-media'),
+				'renameFolder'		=> __('Rename Folder', 'zu-media'),
+				'renameAlert'		=> __('Please give a new name to this folder', 'zu-media'),
+				'delete'			=> __('Delete', 'zu-media'),
+				'deleteFolder'		=> __('Delete folder?', 'zu-media'),
+				'deleteAlert'		=> __('This will delete the folder "%s".', 'zu-media'),
 			],
 		];
 
@@ -208,10 +227,6 @@ class zu_MediaFolder extends zukit_Addon {
 		global $wp_list_table;
 		// for table view 'WP_Media_List_Table' class will be used
 		return !empty($wp_list_table) && get_class($wp_list_table) === 'WP_Media_List_Table';
-
-		// NOTE: delete?
-		// if($loose_check) return $pagenow === 'upload.php';
-        // return $pagenow === 'upload.php' && ($_REQUEST['mode'] ?? null) === 'list';
 	}
 
 	public function tableview_select_folder($query) {
@@ -226,7 +241,7 @@ class zu_MediaFolder extends zukit_Addon {
 	public  function tableview_category_filter() {
         if($this->is_tableview()) {
             $dropdown_options = [
-				'show_option_none' 		=> __('No Categories', 'zumedia'),
+				'show_option_none' 		=> __('No Categories', 'zu-media'),
 				'option_none_value' 	=> 0,
 				'hide_empty' 			=> false,
 				'hierarchical' 			=> true,
