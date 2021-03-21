@@ -1,11 +1,24 @@
 text eol=lf
 
+# Plugin ignore stuff
+#####################
+
 .gitattributes export-ignore
 .gitignore export-ignore
-package.json export-ignore
-Gruntfile.js export-ignore
+apple-touch-icon.png export-ignore
+/*.json export-ignore
+/*.md export-ignore
+/sass export-ignore
+/scripts export-ignore
+/sources export-ignore
+/lang/*.pot export-ignore
+zukit.sh
 
-style.css merge=ours
+# GitHub ignore stuff
+#####################
+
+/.wordpress-org export-ignore
+/.github export-ignore
 
 # Zukit ignore stuff
 
