@@ -2,8 +2,8 @@
 Contributors: dmitryrudakov
 Tags: gutenberg, folders, dominant color, admin, media library folders, media library
 Requires at least: 5.1.0
-Tested up to: 5.6.2
-Stable tag: 2.2.0
+Tested up to: 5.7
+Stable tag: 2.2.1
 License: GPLv2 or later
 Requires PHP: 7.0.0
 
@@ -56,6 +56,13 @@ This plugin includes several enhancements to the WordPress Media Library that ca
 6. Folders Toolbar
 
 == Changelog ==
+
+### 2.2.1 ###
+* added logic for icons in WP version up to 5.5
+* improved JS and CSS for WP with version less than 5.5
+* changed license to GPL-2.0
+* tested for compatibility with WP 5.7
+* small improvements
 
 ### 2.2.0 ###
 * refactoring `ratio` getter and public API methods
@@ -141,14 +148,4 @@ This plugin includes several enhancements to the WordPress Media Library that ca
 * gallery shortcode: `ajaxed` attribute was renamed to `lazyload`
 * added `no_lazyload` attribute to `gallery` shortcode
 * improved `alt` transformation in `figure` repeater
-
-### 1.8.5 ###
-* added `params` attribute to defaults for JS
-* added `no_false` param to pass in JS attributes which should be deleted when set to false
-* added `cached`, `m_disabled` and `m_firstonly` attributes to `gallery` shortcode
-* added `$_caption` var to all repeaters
-* if image `alt` contains `nocopy` then no copyright will be inserted in `figure`
-* if image `alt` is equal to `copy:X` then X will be inserted in `figure` as copyright
-* added button to reset cache in `Media Actions` meta box
-* css modifications
 

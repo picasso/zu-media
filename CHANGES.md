@@ -1,3 +1,10 @@
+### 2.2.1 ###
+* added logic for icons in WP version up to 5.5
+* improved JS and CSS for WP with version less than 5.5
+* changed license to GPL-2.0
+* tested for compatibility with WP 5.7
+* small improvements
+
 ### 2.2.0 ###
 * refactoring `ratio` getter and public API methods
 * added icons, screenshots and readme
