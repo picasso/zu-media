@@ -12,6 +12,7 @@ import ZumediaFolders from './settings/folders.js';
 import ZumediaSizes from './settings/sizes.js';
 
 const EditZumedia = ({
+		wp,
 		title,
 		options,
 		updateOptions,
@@ -28,6 +29,7 @@ const EditZumedia = ({
 					{ selectOption(options[galleryType.id], galleryType, updateOptions) }
 				</ZukitPanel>
 				<ZumediaFolders
+					wp={ wp }
 					data={ folders }
 					options={ options }
 					updateOptions={ updateOptions }

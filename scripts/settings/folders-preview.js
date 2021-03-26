@@ -169,7 +169,7 @@ const TreeNode = ({
 				<div className={ mergeClasses(cls.icon, { opened, closed: !opened }) }>
 					<div className={ cls.holder }>{ nodeIcon }</div>
 				</div>
-				<a href="#" className={ cls.item } data-id={ id } onClick={ () => onClick(id) }>{ name }</a>
+				<a className={ cls.item } data-id={ id } onClick={ () => onClick(id) }>{ name }</a>
 			</div>
 			{ isEmpty(children) ? null :
 				<ul className={ cls.node } style={ id === 0 || expanded ? null : { display: 'none' } }>

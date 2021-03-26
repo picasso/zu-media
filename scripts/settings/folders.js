@@ -8,7 +8,7 @@ const { useCallback } = wp.element;
 // Zukit dependencies
 
 const { toggleOption } = wp.zukit.render;
-const { mergeClasses } = wp.zukit.utils;
+const { mergeClasses, compareVersions } = wp.zukit.utils;
 const { SelectItemControl, RawHTML, ZukitDivider, ZukitPanel } = wp.zukit.components;
 
 // Internal dependencies
@@ -40,6 +40,7 @@ const getFolderIcon = (value, selected = null, isSVG = false) => {
 }
 
 const ZumediaFolders = ({
+		wp,
 		data,
 		options,
 		updateOptions,
@@ -59,8 +60,12 @@ const ZumediaFolders = ({
 
 	const cls = ZumediaFoldersPreview.Classes;
 
+	// do not use the last back icon for WP before 5.5
+	const obsoleteVer = compareVersions(wp, '5.5') < 0;
+	const backIcons = obsoleteVer ? data.icons.back.slice(0, -1) : data.icons.back;
+
 	return (
-			<ZukitPanel className="__folders" id="folders" options={ options } initialOpen={ false }>
+			<ZukitPanel className="__folders" id="folders" options={ options } initialOpen={ true }>
 				<div className="__folders_container">
 					<div className="__folders_preview">
 						<ZumediaFoldersPreview options={ folders } data={ data }/>
@@ -108,9 +113,10 @@ const ZumediaFolders = ({
 						/>
 						<ZukitDivider bottomHalf/>
 						<SelectItemControl
+							fillMissing
 							columns={ 5 }
 							label={ __('Select Back Icon', 'zu-media') }
-							options={ data.icons.back }
+							options={ backIcons }
 							selectedItem={ folders.icons.back }
 							onClick={ value => updateFolderOptions({ 'icons.back': value}) }
 							transformValue={ getFolderIcon }
