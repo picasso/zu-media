@@ -4,8 +4,8 @@
 [![WordPress Plugin: Tested WP Version](https://img.shields.io/wordpress/plugin/tested/zu-media?color=4ab866&style=for-the-badge)](https://wordpress.org/plugins/zu-media/)
 [![WordPress Plugin Required PHP Version](https://img.shields.io/wordpress/plugin/required-php/zu-media?color=bc2a8d&style=for-the-badge)](https://www.php.net/) -->
 
-[![WordPress Plugin Version](https://img.shields.io/badge/plugin-v2.1.0-007ec6.svg?style=for-the-badge)]()
-[![WordPress Plugin: Tested WP Version](https://img.shields.io/badge/wordpress-v5.6.2%20tested-4ab866.svg?style=for-the-badge)]()
+[![WordPress Plugin Version](https://img.shields.io/badge/plugin-v2.2.1-007ec6.svg?style=for-the-badge)]()
+[![WordPress Plugin: Tested WP Version](https://img.shields.io/badge/wordpress-v5.7%20tested-4ab866.svg?style=for-the-badge)]()
 [![WordPress Plugin Required PHP Version](https://img.shields.io/badge/php->=7.0.0-bc2a8d.svg?style=for-the-badge)](https://www.php.net/)
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-fcbf00.svg?style=for-the-badge)](https://github.com/picasso/zu-media/blob/master/LICENSE)
 
