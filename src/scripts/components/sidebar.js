@@ -17,6 +17,7 @@ function availablePanels(panels, options) {
 
 const ZukitSidebar = ({
 		// id,
+		// wp,
 		version,
 		title,
 		author,

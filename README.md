@@ -19,7 +19,7 @@ Documentation is available on the [GitHub wiki](https://github.com/picasso/zukit
 
 ### Structure of "Zukit"
 
-- Folder __dist__ contains _production_ versions of js and css files;
+- Folder __dist__ contains _production_ versions `JS` and `CSS` files;
 - Folder __lang__ contains files needed for translations;
 - Folder __snippets__ contains a collection of various functions that I have accumulated during my work with WordPress. They are combined into one class for ease of use;
 - Folder __traits__ contains traits that are included in the class `zukit_Plugin`. Used to group functionality in a fine-grained and consistent way;

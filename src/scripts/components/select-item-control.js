@@ -31,6 +31,7 @@ const SelectItemControl = ({
 		isSecondary = true,
 		isSmall = true,
 		withoutControl,				// if true the control will be wrapped in regular <div>, otherwise in <BaseControl>
+		fillMissing,				// if true then 'empty & disabled' items will be added to the required number based on the number of columns
 		recap,						// maybe true (then default options will be used) or object with options (label, value, style, isDisabled)
 		options,					// array of object with keys 'value' and 'label' [{ label: 'Name', value: 2 }]
 									// could be array of values - then it will be transformed to array of objects
@@ -48,7 +49,11 @@ const SelectItemControl = ({
 		...additionalProps			// all additional props go to Button
 }) => {
 
-	const makeItem = ({ label, value, style, isDisabled }) => (
+	// fill 'missing' items with 'empty' slots if requested
+	const missingCount = fillMissing ? Math.ceil(options.length/columns) * columns - options.length : 0;
+	const missing = Array(missingCount).fill().map((_, i) => ({ value: `slot${i}`, isDisabled: true, isSlot: true }));
+
+	const makeItem = ({ label, value, style, isDisabled, isSlot }) => (
 		<ConditionalWrap
 			condition={ withTooltip }
 			wrap={ Tooltip }
@@ -61,19 +66,25 @@ const SelectItemControl = ({
 				{
 					'is-selected': selectedItem === value && !isDisabled,
 					'is-disabled': isDisabled,
+					'is-slot': isSlot,
 				})
 			}>
 				<Button
-					className={ mergeClasses(`${cname}__button`, buttonClass, `${cname}__${ value }`,  {['is-selected']: selectedItem === value && !isDisabled }) }
+					className={ mergeClasses(
+						`${cname}__button`,
+						buttonClass,
+						`${cname}__${ value }`,
+						{['is-selected']: selectedItem === value && !isDisabled }
+					) }
 					isSecondary={ isSecondary }
 					isSmall={ isSmall }
 					onClick={ () => isDisabled ? false : onClick(value) }
 					style={ style || buttonStyle  }
 					{ ...pick(additionalProps, buttonPossibleProps) }
 				>
-					{ isFunction(transformValue) ? transformValue(value, label, style) : value }
+					{ isSlot ? null : (isFunction(transformValue) ? transformValue(value, label, style) : value) }
 				</Button>
-				{ withLabels &&
+				{ !isSlot && withLabels &&
 					<div className="block-editor-block-styles__item-label">
 						{ label }
 					</div>
@@ -99,6 +110,7 @@ const SelectItemControl = ({
 				{ beforeItem }
 				{ recap && makeItem(recapOptions) }
 				{ map(selectOptions, makeItem) }
+				{ map(missing, makeItem) }
 				{ afterItem }
 			</ButtonGroup>
 		</ConditionalWrap>
