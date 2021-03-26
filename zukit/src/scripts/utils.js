@@ -146,6 +146,25 @@ export function hexToRGBA(hex, alpha, asObject = false) {
 	return asObject ? rgba : `rgba(${rgba.r},${rgba.g},${rgba.b},${rgba.a})`;
 }
 
+// compare version numbers with segments
+// Return values:
+// 		a number < 0 if a < b
+//		a number > 0 if a > b
+//		0 if a = b
+export function compareVersions(a, b) {
+    let i, diff;
+    const regExStrip0 = /(\.0+)+$/;
+    const segmentsA = String(a).replace(regExStrip0, '').split('.');
+    const segmentsB = String(b).replace(regExStrip0, '').split('.');
+    const l = Math.min(segmentsA.length, segmentsB.length);
+
+    for(i = 0; i < l; i++) {
+        diff = parseInt(segmentsA[i], 10) - parseInt(segmentsB[i], 10);
+        if(diff) return diff;
+    }
+    return segmentsA.length - segmentsB.length;
+}
+
 // Some useful data -----------------------------------------------------------]
 
 export const emptyGif = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';

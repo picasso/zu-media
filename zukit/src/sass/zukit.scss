@@ -22,11 +22,76 @@ $divider-component-class: zukit-divider;
 	#wpfooter {
 		display: none;
 	}
-	.interface-interface-skeleton__body {
+	.interface-interface-skeleton__body,
+	.block-editor-editor-skeleton__body {
 		padding: 0;
 	}
-	.interface-interface-skeleton__sidebar > div {
+	.interface-interface-skeleton__sidebar > div,
+	.block-editor-editor-skeleton__sidebar > div {
 	    height: auto;
+	}
+
+	// when WP == 5.4 ---------------------------------------------------------]
+
+	.wp_5_4 {
+		&.block-editor-editor-skeleton {
+			.block-editor-block-list__layout {
+				padding: 0;
+				.block-editor-block-list__block {
+					margin: 0 auto;
+				}
+			}
+			.components-range-control__number {
+				width: auto;
+			}
+		}
+	}
+
+	// when WP version < 5.4 --------------------------------------------------]
+
+	.wp_less_5_4 {
+		&.block-editor-editor-skeleton {
+		    padding: 0;
+		    left: -20px;
+		    width: calc(100% + 20px);
+			.block-editor-editor-skeleton__body {
+			    height: 100%;
+				.block-editor-editor-skeleton__content {
+				    min-height: 100%;
+				    width: calc(100% - 280px);
+					.block-editor-block-list__layout {
+					    padding: 28px 0;
+						.block-editor-block-list__block {
+						    padding: 0 !important;
+						    margin: 0 auto;
+						}
+					}
+					@include breakpoint-width(LESS_SETTINGS_SIDEBAR_BREAK) {
+						width: 100%;
+					}
+				}
+				.block-editor-editor-skeleton__sidebar {
+					.edit-post-sidebar {
+					    top: 32px;
+					}
+					.block-editor-block-inspector .block-editor-block-card {
+					    padding: 16px;
+					}
+				}
+			}
+			.components-button.__plugin_actions {
+			    min-height: 36px;
+			    padding: 6px;
+			    padding-left: 12px;
+			    border-radius: 2px;
+			}
+			.components-range-control__slider {
+				z-index: 0;
+			}
+			.components-range-control__number {
+				width: auto;
+			}
+		}
 	}
 
 	.#{$skeleton-class} {

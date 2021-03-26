@@ -45,6 +45,7 @@ $select-item-basic-border-color: rgb(25, 30, 35);
 		margin: $admin-button-wrapper-margin 0;
 		padding: $admin-button-wrapper-padding;
 		width: calc(100% - #{twice($admin-button-wrapper-padding)});
+		z-index: 0;
 
 		&.is-selected {
 			box-shadow: none;
@@ -77,6 +78,16 @@ $select-item-basic-border-color: rgb(25, 30, 35);
 				background-color: $select-item-disabled-bg-color;
 				border-color: $select-item-disabled-border-color;
 				color: $select-item-disabled-color;
+            }
+        }
+		&.is-slot {
+            .components-button {
+				width: 100%;
+				height: 100%;
+                pointer-events: none;
+				background-color: transparent;
+				border-color: rgba($wp-gray-200, 0.4);
+				color: transparent;
             }
         }
 
@@ -134,8 +145,8 @@ $select-item-basic-border-color: rgb(25, 30, 35);
 		box-shadow: none !important;
 
 		&:hover {
-			color: $select-item-hover-color;
-			background-color: $select-item-bg-hover-color;
+			color: $select-item-hover-color !important;
+			background-color: $select-item-bg-hover-color !important;
 			border-color: $select-item-border-hover-color !important;
 		}
 

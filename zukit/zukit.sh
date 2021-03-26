@@ -78,6 +78,7 @@ if [[ -d 'zukit' && $(has_remote) == "1" ]]; then
         git remote rm zukit
         message '### Removing the previous "zukit" subtree...' 'red'
         git rm -r zukit
+        rm -rf zukit
         git add .
         git commit -am 'after removing previous Zukit subtree'
         echo '\n'

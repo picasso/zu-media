@@ -390,6 +390,7 @@ class zukit_Plugin extends zukit_Singleton {
 			'slug'			=> $this->snippets('get_slug'),
 		] : [
 			'jsdata_name'	=> $this->prefix_it('settings', '_'),
+			'wp'			=> get_bloginfo('version'),
 			'router'		=> $this->get_router_name(),
 			'options' 		=> $this->options,
 			'info'			=> $this->info(),

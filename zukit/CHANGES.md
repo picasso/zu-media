@@ -1,3 +1,15 @@
+#### 1.1.6 / 2021-03-26
+* added inline style for submenu separators
+* added `fillMissing` prop for `SelectItemControl` component
+* tested for compatibility with WP 5.7
+
+#### 1.1.5 / 2021-03-24
+* added `compareVersions` function to `utils`
+* passed a WP version to the script and basic containers
+* improved JS and CSS for WP with version earlier than 5.5
+* fixed bug `prefix already exists` in `zukit.sh`
+* other small fixes
+
 #### 1.1.4 / 2021-03-21
 * added `ModalMessage` and `RawHTML` components for the Settings Page export
 * added default size and `bottomHalf` option for `ZukitDivider` component
