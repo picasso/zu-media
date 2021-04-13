@@ -11,7 +11,7 @@ class zu_MediaDominant extends zukit_Addon {
 	private $accurate = false;
 
 	protected function config() {
-		return ['name'	=> 'dominant'];
+		return ['name'	=> 'zumedia_dominant'];
 	}
 
 	public static function default_color() {

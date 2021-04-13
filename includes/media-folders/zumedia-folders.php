@@ -90,8 +90,6 @@ class zu_MediaFolder extends zukit_Addon {
 			// prefix will be added to script name automatically
 			$this->admin_enqueue_style('folders');
 		}
-		// add styles only for Settings Page (needed for Folders Preview)
-		if($this->ends_with_slug($hook)) $this->admin_enqueue_style('folders');
 	}
 
 	private function collect_script_data() {
@@ -215,7 +213,7 @@ class zu_MediaFolder extends zukit_Addon {
 
 	        if($parent_id) {
 				$result = wp_set_object_terms($attachment_id, $parent_id, $this->folders_category, true);
-				if(is_wp_error($result)) $this->log_error($result, ['wp_generate_attachment_metadata' => 'after_upload']);
+				if(is_wp_error($result)) $this->logc('Something is wrong after uploading the attachment!', $result);
 	        }
 		}
         return $metadata;

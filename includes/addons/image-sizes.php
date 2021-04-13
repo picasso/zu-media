@@ -38,6 +38,10 @@ class zu_MediaImageSizes extends zukit_Addon {
 		],
 	];
 
+	protected function config() {
+		return ['name'	=> 'zumedia_image_sizes'];
+	}
+
 	protected function construct_more() {
 		$responsive_support = $this->is_plugin_option('responsive');
 		if($responsive_support) self::backup();

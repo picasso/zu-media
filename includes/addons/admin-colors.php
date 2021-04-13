@@ -13,6 +13,10 @@ class zu_MediaAdminColors extends zukit_Addon {
 	private $icon_keys = ['icon_base', 'icon_focus', 'icon_current'];
 	private $file_format = '/admin/css/colors/%1$s.css';
 
+	protected function config() {
+		return ['name'	=> 'zumedia_admin_colors'];
+	}
+
 	public function admin_init() {
 
 		foreach($this->schemes as $color_scheme => $title) {
