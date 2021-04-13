@@ -20,13 +20,13 @@ const EditZumedia = ({
 		ajaxAction,
 }) => {
 
-	const { options: optionsData, galleryType, folders } = zumedia;
+	const { options: optionsData, galleryType: galleryData, folders } = zumedia;
 
 	return (
 			<>
 				<ZukitPanel title={ title }>
 					{ toggleOption(optionsData, options, updateOptions) }
-					{ selectOption(options[galleryType.id], galleryType, updateOptions) }
+					{ selectOption(galleryData, options, updateOptions) }
 				</ZukitPanel>
 				<ZumediaFolders
 					wp={ wp }

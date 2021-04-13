@@ -71,7 +71,7 @@ const ZumediaFolders = ({
 						<ZumediaFoldersPreview options={ folders } data={ data }/>
 					</div>
 					<div className="__folders_options">
-						{ toggleOption(omit(data, ['icons', 'colors', 'tree']), options, updateFolderOptions, optionsKey) }
+						{ toggleOption(omit(data, ['icons', 'colors', 'tree']), options, updateOptions, optionsKey) }
 						</div>
 					</div>
 						<ZukitDivider bottomHalf/>
