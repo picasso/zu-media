@@ -229,6 +229,15 @@ class zu_Media extends zukit_Plugin  {
 		return $is_frontend === false && $this->ends_with_slug($hook);
 	}
 
+	protected function enqueue_more($is_frontend, $hook) {
+		// always add styles only for Settings Page (needed for Folders Preview)
+		// we cannot do this in the add-on, since if it is not created (because
+		// the 'folders' option is disabled), then the styles will not be loaded
+		if(!$is_frontend && $this->ends_with_slug($hook)) {
+			$this->admin_enqueue_style('zumedia-folders');
+		}
+	}
+
 	// Dominant Colors --------------------------------------------------------]
 
 	public function get_dominant_by_id($post_or_attachment_id = null) {
