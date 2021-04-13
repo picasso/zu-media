@@ -1,6 +1,5 @@
 // WordPress dependencies
 
-const { ExternalLink } = wp.components;
 const { __ } = wp.i18n;
 
 // Internal dependencies
@@ -22,10 +21,10 @@ const options = {
 	dominant: {
 		label: 	__('Add Dominant Colors for images in Media Library', 'zu-media'),
 		help:	__('You should updated all existing images after activation via "Update Dominants" action.', 'zu-media'),
-		// 2em -> margins above and under the divider
-		divider: 2,
 	},
 	media_ratio: {
+		// 2em -> margins above and under the divider
+		divider: 2,
 		label: 	__('Add Media Ratio field to all media files?', 'zu-media'),
 		help:	__('The media ratio will be calculated based on current sizes. Can be used in image selections.', 'zu-media'),
 	},
@@ -40,20 +39,15 @@ const options = {
 	add_location: {
 		label: 	__('Add Location for Media Library?', 'zu-media'),
 		help:	__('Creates a new category which will be used only for Media Libaray.', 'zu-media'),
-		divider: 2,
 	},
 	admin_colors: {
+		divider: 2,
 		label: 	__('Add new Admin Color Schemes', 'zu-media'),
-		help:
-			<>
-				{ __('You can change it in ', 'zu-media') }
-				<ExternalLink href={ '/wp-admin/profile.php' }>{ __('Your Profile', 'zu-media') }</ExternalLink>
-			</>,
+		help: __('You can change it in [Your Profile](/wp-admin/profile.php)', 'zu-media'),
 	},
 	disable_cache: {
 		label: 	__('Disable Cache?', 'zu-media'),
 		help: __('Disabling caching will result in memory savings, but very small (not recommended).', 'zu-media'),
-		divider: 2,
 	},
 	// не реализовано еще
 	svg: {
@@ -77,6 +71,7 @@ const galleryType = {
 		{ value: 'posts', label: __('Posts with "gallery" format', 'zu-media') },
 	],
 	defaultValue: 'portfolio',
+	divider: 2,
 }
 
 const folderIcons = [
