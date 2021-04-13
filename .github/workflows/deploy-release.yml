@@ -1,0 +1,21 @@
+name: Deploy Release to WordPress.org
+on:
+  release:
+    types: [published]
+
+jobs:
+  wordpress:
+    name: New Release
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    #- name: Install Dependencies
+    #  run: npm install
+
+    - name: WordPress Plugin Deploy
+      uses: 10up/action-wordpress-plugin-deploy@stable
+      env:
+        SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+        SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
