@@ -1,18 +1,13 @@
 # Zu Media: Media Library with folders, dominant colors and more.
 
-<!-- [![WordPress Plugin Version](https://img.shields.io/wordpress/plugin/v/zu-media?style=for-the-badge)](https://wordpress.org/plugins/zu-media/)
-[![WordPress Plugin: Tested WP Version](https://img.shields.io/wordpress/plugin/tested/zu-media?color=4ab866&style=for-the-badge)](https://wordpress.org/plugins/zu-media/)
-[![WordPress Plugin Required PHP Version](https://img.shields.io/wordpress/plugin/required-php/zu-media?color=bc2a8d&style=for-the-badge)](https://www.php.net/) -->
-
-[![WordPress Plugin Version](https://img.shields.io/badge/plugin-v2.2.2-007ec6.svg?style=for-the-badge)]()
-[![WordPress Plugin: Tested WP Version](https://img.shields.io/badge/wordpress-v5.7.0%20tested-4ab866.svg?style=for-the-badge)]()
-[![WordPress Plugin Required PHP Version](https://img.shields.io/badge/php->=7.0.0-bc2a8d.svg?style=for-the-badge)](https://www.php.net/)
-[![License](https://img.shields.io/badge/license-GPL--2.0%2B-fcbf00.svg?style=for-the-badge)](https://github.com/picasso/zu-media/blob/master/LICENSE)
+[![WordPress Plugin Version](https://img.shields.io/wordpress/plugin/v/zu-media?style=for-the-badge)]()
+[![WordPress Plugin: Tested WP Version](https://img.shields.io/wordpress/plugin/tested/zu-media?color=4ab866&style=for-the-badge)]()
+[![WordPress Plugin Required PHP Version](https://img.shields.io/wordpress/plugin/required-php/zu-media?color=bc2a8d&style=for-the-badge)](https://www.php.net/)
+[![License](https://img.shields.io/github/license/picasso/zu-media?color=fcbf00&style=for-the-badge)](https://github.com/picasso/zu-media/blob/master/LICENSE)
 
  <!-- ![WordPress Plugin Downloads](https://img.shields.io/wordpress/plugin/dt/zu-media?color=00aced&style=for-the-badge) -->
 
 Enhances WordPress Media Library with some features (folders, dominant color, location category and others).
-
 
 ![Zu Media - Media Library with folders, dominant colors and more.](https://user-images.githubusercontent.com/399395/111074321-bfc89100-84e2-11eb-8a40-09671bff8da4.png)
 
