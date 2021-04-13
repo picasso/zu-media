@@ -58,7 +58,7 @@ trait zukit_Admin {
 
 	// Wordpress Admin Page ---------------------------------------------------]
 
-	protected function info() {
+	public function info() {
 		$domain = $this->text_domain();
 		$link = $this->data['AuthorURI'];
 		$desc = $this->data['Description'];
@@ -93,7 +93,7 @@ trait zukit_Admin {
 		return false;
 	}
 
-	private function instance_by_router($router = null) {
+	protected function instance_by_router($router = null) {
 		// $router is $this->admin_slug()
 		return is_null($router) ? self::$zukit_items : (self::$zukit_items[$router] ?? null);
 	}
@@ -115,14 +115,17 @@ trait zukit_Admin {
 		printf( '<div id="%1$s" class="block-editor__container"></div>', $this->prefix);
 	}
 
-	public function admin_settings_link($links) {
-		$settings_link = sprintf(
-			'<a href="%1$s%2$s?page=%3$s">%4$s</a>',
+	public function admin_settings_link($links, $as_array = false) {
+		$href = sprintf(
+			'%1$s%2$s?page=%3$s',
 			get_admin_url(),
 			$this->ops['hook'],
-			$this->admin_slug(),
-			__('Settings', 'zukit')
+			$this->admin_slug()
 		);
+		$title = __('Settings', 'zukit');
+		if($as_array) return [$href, $title];
+
+		$settings_link = sprintf('<a href="%1$s">%2$s</a>', $href, $title);
 		array_unshift($links, $settings_link);
 		return $links;
 	}

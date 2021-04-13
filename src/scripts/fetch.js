@@ -41,7 +41,7 @@ function onSuccessAjax(createNotice, request, callback = null, loading = null) {
 		if(_.isFunction(loading)) loading({ [actionKey]: false });
 
 		// Если 'notice' combined with 'data' - transform to 'real' status
-		if(_.includes(status, 'data')) {
+		if(status !== 'data' && _.includes(status, 'data')) {
 			status = status.replace('data', '');
 			withData = true;
 		}
@@ -62,7 +62,7 @@ function onSuccessAjax(createNotice, request, callback = null, loading = null) {
 			params = { action: actionKey };
 		}
 
-		if(status !== 'data' && !withData) {
+		if(status !== 'data') {
 			createNotice({
 				status, 									// Can be one of: success, info, warning, error
 				content: messageWithError(content, params), // Text string to display

@@ -1,17 +1,19 @@
 <?php
+include_once('traits/classes.php');
+include_once('traits/content.php');
+include_once('traits/date.php');
+include_once('traits/inline.php');
+include_once('traits/lang.php');
+include_once('traits/loader.php');
+include_once('traits/minify.php');
 include_once('traits/slugs.php');
 include_once('traits/thumbnails.php');
-include_once('traits/lang.php');
-include_once('traits/inline.php');
-include_once('traits/minify.php');
-include_once('traits/date.php');
-include_once('traits/content.php');
-include_once('traits/loader.php');
 include_once('traits/useful.php');
 
-class zukit_Snippets extends zukit_Singleton {
+class zukit_Snippets extends zukit_SingletonLogging {
 
-	use zusnippets_Content,
+	use zusnippets_Classes,
+		zusnippets_Content,
 		zusnippets_Date,
 		zusnippets_InlineStyle,
 		zusnippets_Lang,
@@ -23,51 +25,8 @@ class zukit_Snippets extends zukit_Singleton {
 
 	protected function construct_more() {
 		$this->prefix = 'zu_snippets';
-        $this->version = '1.1.6';
+        $this->version = '1.1.8';
 		$this->init_advanced_style();
-	}
-
-	// Classes manipulations --------------------------------------------------]
-
-	public function split_classes($classes, $as_is = false) {
-		$classes = is_array($classes) ? $classes : preg_split('/[\s,]+/', $classes);
-		$classes = array_map('trim', $classes);
-		return $as_is ? $classes : array_unique(array_filter($classes));
-	}
-
-	public function merge_classes($classes, $join = true) {
-		$classes = $this->split_classes($classes, $join ? false : true);
-		return $join ? implode(' ', $classes) : $classes;
-	}
-
-	public function remove_classes($classes, $remove = [], $join = true) {
-		$classes = $this->split_classes($classes);
-		foreach($remove as $test) if(in_array($test, $classes)) unset($classes[array_search($test, $classes)]);
-		return $join ? implode(' ', $classes) : $classes;
-	}
-
-	public function add_body_class($my_classes, $prefix = '') {
-		add_filter('body_class', function($classes) use ($my_classes, $prefix) {
-			$my_classes = $this->prefix_an_clean_class($classes, $my_classes, $prefix);
-			$classes[] = $this->merge_classes($my_classes);
-			return array_filter($classes);
-		});
-	}
-
-	public function add_admin_body_class($my_classes, $prefix = '') {
-		add_filter('admin_body_class', function($classes) use ($my_classes, $prefix) {
-			$classes = $this->split_classes($classes);
-			$my_classes = $this->prefix_an_clean_class($classes, $my_classes, $prefix);
-		    return $this->merge_classes(array_merge($classes, array_filter($my_classes)));
-		});
-	}
-
-	private function prefix_an_clean_class($classes, $my_classes, $prefix) {
-		$my_classes = $this->split_classes($my_classes);
-		// add prefix to all classes
-		if(!empty($prefix)) $my_classes = preg_filter('/^/', $prefix, $my_classes);
-		// remove all already existing classes
-		return $this->remove_classes($my_classes, $classes, false);
 	}
 }
 
@@ -105,5 +64,17 @@ if(!function_exists('zu_sprintf')) {
 	function zu_printf(...$params) {
 		$output = call_user_func_array('zu_sprintf', $params);
 		print($output);
+	}
+}
+
+if(!function_exists('_zu_log')) {
+    function _zu_log(...$params) {
+		zu_snippets()->log_with(0, null, ...$params);
+    }
+	function _zu_logc($context, ...$params) {
+		zu_snippets()->log_with(0, $context, ...$params);
+    }
+	function _zu_logd($info, $var) {
+		zu_snippets()->logd($info, $var);
 	}
 }

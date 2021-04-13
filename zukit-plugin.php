@@ -12,7 +12,9 @@ require_once('traits/debug.php');
 
 // Basic Plugin Class ---------------------------------------------------------]
 
-class zukit_Plugin extends zukit_Singleton {
+class zukit_Plugin extends zukit_SingletonScripts {
+
+	private static $zukit_version = '1.2.0'; // (modified)';
 
 	public $config;
 
@@ -75,6 +77,9 @@ class zukit_Plugin extends zukit_Singleton {
 
 		$this->prefix = $this->get('prefix') ?? $this->prefix;
 		$this->options_key = $this->get('options_key') ?? $this->prefix.'_options';
+		// keep updated values in config (there they can be available for add-ons)
+		$this->config['prefix'] = $this->prefix;
+		$this->config['options_key'] = $this->options_key;
 
 		// Load 'options' before any other actions
 		add_action('init', [$this, 'options'], 9);
@@ -115,6 +120,8 @@ class zukit_Plugin extends zukit_Singleton {
 
 	public function init() {}
 	public function admin_init() {}
+
+	public function zukit_ver() { return self::$zukit_version; }
 
 	// Translations -----------------------------------------------------------]
 
@@ -176,9 +183,9 @@ class zukit_Plugin extends zukit_Singleton {
 		foreach($this->addons as $addon) {
 
 			if(method_exists($addon, $action)) call_user_func_array([$addon, $action], [$param]);
-			else $this->log_error(
-				['action' => $action, 'param' => $param],
-				['do_addons' => 'Unknown addon method!']
+			else $this->logc('Unknown addon method!', [
+				'action' => $action,
+				'param' => $param]
 			);
 		}
 	}
@@ -193,10 +200,10 @@ class zukit_Plugin extends zukit_Singleton {
 			// сообщить об ошибке если два $addon отреагировали на одно действие
 			// если не отреагировали, то результат должен быть null
 			if($ajax_result !== null && $result !== null) {
-				$this->log_error(
-					['action' => $action, 'value' => $value],
-					['ajax_addons' => 'Two or more addons responded to ajax actions!']
-				);
+				$this->logc('Two or more addons responded to ajax actions!', [
+					'action' => $action,
+					'value' => $value
+				]);
 			} else if($result === null) {
 				$result = $ajax_result;
 			}
@@ -432,8 +439,16 @@ class zukit_Plugin extends zukit_Singleton {
 
 	public function frontend_handles() {
 		$handles = ['script' => null, 'style' => null];
-		if($this->should_load_js(true, null)) $handles['script'] = $this->enqueue_script(null, $this->js_params_validated(true), true);
-		if($this->should_load_css(true, null)) $handles['style'] = $this->enqueue_style(null, $this->css_params_validated(true), true);
+		if($this->should_load_js(true, null)) $handles['script'] = $this->enqueue_script(
+			null,
+			$this->js_params_validated(true),
+			true
+		);
+		if($this->should_load_css(true, null)) $handles['style'] = $this->enqueue_style(
+			null,
+			$this->css_params_validated(true),
+			true
+		);
 		return $handles;
 	}
 
@@ -560,19 +575,12 @@ class zukit_Plugin extends zukit_Singleton {
 
 	// Error handling ---------------------------------------------------------]
 
-	// нужно написать перегрузку этой функции чтобы вызывать функцию из Zu+ если он доступен
-	// public function log_error($error, $context) {
-	// 	if(isset($context)) error_log(print_r($context, true));
-	// 	error_log(print_r($error, true));
-	// }
-
 	public function check_error($error, $ajax = false, &$report = null) {
 		if(is_wp_error($error)) {
 			if(isset($report) && isset($report['errors'])) $report['errors'] += 1;
-
 			if($ajax) $this->ajax_error($error, is_array($report) ? null : $report);
-			else $this->log_error($error, $report);
 
+			$this->logc('!WP_Error occurred', $error, $report);
 			return true;
 		}
 		return false;

@@ -1,3 +1,46 @@
+#### 1.2.0 / 2021-04-13
+* refactoring `zukit_Singleton` to use `zukit_Logging` and `zukit_Scripts` traits
+* added support for __Zukit__ version
+* refactoring logging to work with `Zu Plus`
+* all `log**` methods are moved to debug trait
+* replaced `log_error` calls to `logс` from the new trait
+* added `dump_log` method which can be overridden in a child class
+* added `logfile_clean` method
+* improved `debug_print` for menu and submenus arrays
+
+* implemented `MoreActionsSlot` slot for additional actions
+* support for the `hasMoreActions` key
+* implemented `ZukitActionButton` component to make it easier to work with actions
+* support for the `moreData` parameter in `ZukitSkeleton` component
+* refactoring `selectOption` and `toggleOption` for more complete and consistent data support
+* added support for array and logical operator in the `depends` argument
+
+* added `simpleMarkdown` function for strings
+* added `raw` and `json` params for `simpleMarkdown` function
+* used `simpleMarkdown` in `help` elements
+* used `simpleMarkdown` in notices
+* replaced HTML in notices with markdown
+
+* added `shrinked` mode for `ZukitTable` component
+* added support for cell params, `markdown` and `link` cell
+* added option to get table without `head`
+* improved table css
+
+* added `validate_url` method to __snippets__
+* added `icons` set to __Zukit__ export
+* force `$deps` to be an array in scripts params
+* implemented `doing_rest` method
+* added `getExternalData` function
+* fixed `_doing_it_wrong` calls
+* fixed bug with clearing when `debounce` is enabled in `AdvTextControl` component
+* added states sync when `value` was changed outside the `AdvTextControl` component
+* fixed bug with combined `data` and `status` in `onSuccessAjax` function
+* fixed bug with `backdrop` color
+
+* changed the license from GNU to MIT
+* added banner and badges from img.shields.io
+* other small fixes
+
 #### 1.1.6 / 2021-03-26
 * added inline style for submenu separators
 * added `fillMissing` prop for `SelectItemControl` component

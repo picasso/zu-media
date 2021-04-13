@@ -1,8 +1,15 @@
-# Zukit
+# Zukit: The Developer Framework for WordPress.
 
-_Framework serves as the basis for creating plugins or themes for WordPress._
+[![Zukit Version](https://img.shields.io/github/package-json/v/picasso/zukit?style=for-the-badge)]()
+[![Zukit: Tested WP Version](https://img.shields.io/github/package-json/requiresWP/picasso/zukit?color=4ab866&label=wordpress%20tested&style=for-the-badge)]()
+[![Zukit Required PHP Version](https://img.shields.io/github/package-json/requiresPHP/picasso/zukit?color=bc2a8d&label=php&style=for-the-badge)](https://www.php.net/)
+[![License](https://img.shields.io/github/license/picasso/zukit?color=fcbf00&style=for-the-badge)](https://github.com/picasso/zukit/blob/master/LICENSE)
 
+The __Zukit__ framework serves as the basis for creating plugins or themes for WordPress.
 Implements basic functionality for managing scripts and creating plugin or theme settings page based on Gutenberg functionality.
+
+![ZuKit - The Developer Framework for WordPress.](https://raw.githubusercontent.com/wiki/picasso/zukit/assets/banner-1544x500.png)
+
 
 ## Install
 

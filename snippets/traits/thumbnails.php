@@ -125,8 +125,7 @@ trait zusnippets_Thumbnails {
 	}
 
 	public function get_background_color($post_or_attachment_id = null) {
-
-		$color = $this->get_dominant($post_or_attachment_id);
+		$color = function_exists('zumedia') ? zumedia()->get_dominant_by_id($post_or_attachment_id) : 'black';
 		$color_bg = empty($color) ? '' : 'background-color:'.$color.';';
 		return $color_bg;
 	}

@@ -1,19 +1,22 @@
 // WordPress dependencies
 
-const { get, map, isEmpty, isNil, omitBy, pickBy } = lodash;
+const { get, map, isEmpty, isNil, omitBy, pickBy, some } = lodash;
 const { __ } = wp.i18n;
-const { Fragment, useCallback } = wp.element;
-const { PanelBody, PanelRow, Button, ExternalLink, ToggleControl, Spinner } = wp.components;
+const { useCallback } = wp.element;
+const { createSlotFill, PanelBody, PanelRow, Button, ExternalLink, ToggleControl, Spinner } = wp.components;
 
 // Internal dependencies
 
 import { mergeClasses, checkDependency } from './../utils.js';
+import ZukitActionButton from './action-button.js';
 
 // Zukit Sidebar Component
 
 function availablePanels(panels, options) {
 	return pickBy(panels, p => checkDependency(p, options));
 }
+
+const { Fill, Slot: MoreActionsSlot } = createSlotFill('ZukitMoreActions');
 
 const ZukitSidebar = ({
 		// id,
@@ -40,10 +43,11 @@ const ZukitSidebar = ({
 
 	const panels = availablePanels(getPanel(), options);
 	const moreItems = omitBy(more, isNil);
-	const pluginActions = pickBy(omitBy(actions, isNil), ({depends}) => checkDependency(depends, options, true));
+	const pluginActions = pickBy(omitBy(actions, isNil), action => checkDependency(action, options));
 
 	const hasMoreItems = !isEmpty(moreItems);
-	const hasActions = !isEmpty(pluginActions);
+	// either we have actions to display or there is an indication that the 'ZukitMoreActions' slot will be used
+	const hasActions = !isEmpty(pluginActions) || some(actions, ['hasMoreActions', true]);
 	const hasPanels = !isEmpty(panels);
 
 	const debugSet = get(debug, 'prefix', null);
@@ -105,28 +109,19 @@ const ZukitSidebar = ({
 			</PanelBody>
 			{ hasActions &&
 				<PanelBody title={ __('Actions', 'zukit') } initialOpen={ true }>
-					{ map(pluginActions, ({ label, value, icon, color, help, depends }, actionKey) => (
-						checkDependency(depends, options, true) &&
-							<Fragment key={ actionKey }>
-								<PanelRow>
-									<Button
-										className={ mergeClasses('__plugin_actions', {
-											[color]: color,
-											'is-loading': get(actionLoading, value),
-											})
-										}
-										icon={ icon }
-										isSecondary
-										onClick={ () => ajaxAction(value) }
-									>
-										{ label }
-										{ get(actionLoading, value) && <Spinner/> }
-									</Button>
-								</PanelRow>
-								{ help && <p className={ mergeClasses('__help', { [color]: color }) }>{ help }</p> }
-							</Fragment>
-						)
+					{ map(pluginActions, ({ label, value, icon, color, help }, actionKey) => (
+						<ZukitActionButton
+							key={ actionKey }
+							icon={ icon }
+							color={ color }
+							label={ label }
+							help={ help }
+							value={ value }
+							isLoading={ get(actionLoading, value) }
+							onClick={ ajaxAction }
+						/>)
 					) }
+					<MoreActionsSlot/>
 				</PanelBody>
 			}
 			{ hasPanels &&
@@ -176,4 +171,6 @@ const ZukitSidebar = ({
 	);
 }
 
+ZukitSidebar.MoreActions = Fill;
+ZukitSidebar.ActionButton = ZukitActionButton;
 export default ZukitSidebar;

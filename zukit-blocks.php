@@ -313,14 +313,15 @@ class zukit_Blocks extends zukit_Addon {
 				$name = preg_match('/.js_([^\{]+)/', $line, $matches) ? $matches[1] : 'error';
 				$color = preg_match('/color\:(.+)/', $line, $matches) ? $matches[1] : 'red';
 				$short_name = str_replace('_color', '', $name);
-				if(array_key_exists($short_name, $colors)) $this->log_error([
-					'line'			=> $line,
-	                'name'			=> $name,
-	                'color'			=> $color,
-	                'short_name'	=> $short_name,
-					'colors'		=> $colors,
-	            ], 'Duplicate name when creating Zukit Colors!');
-
+				if(array_key_exists($short_name, $colors)) {
+					$this->logc('Duplicate name when creating Zukit Colors!', [
+						'line'			=> $line,
+		                'name'			=> $name,
+		                'color'			=> $color,
+		                'short_name'	=> $short_name,
+						'colors'		=> $colors,
+		            ]);
+				}
 				$colors[$short_name] = $color;
 			}
 		}
