@@ -4,7 +4,7 @@ trait zusnippets_InlineStyle {
     private $advanced_style = [];
 	private $admin_style = [];
 	private $fonts = [];
-    private $without_minify = false;
+    private $without_minify = false; // set 'true' for debuging
 
     private function init_advanced_style() {
         if(is_admin()) add_action('admin_footer', [$this, 'maybe_add_advanced_styles']);

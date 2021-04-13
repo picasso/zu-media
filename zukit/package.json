@@ -1,6 +1,8 @@
 {
     "name": "zukit",
-    "version": "1.1.6",
+    "version": "1.2.0",
+    "requiresWP": "5.7.0",
+    "requiresPHP": ">=7.1.0",
     "repository": {
         "type": "git",
         "url": "https://github.com/picasso/zukit.git"

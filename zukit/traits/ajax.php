@@ -20,6 +20,7 @@ trait zukit_Ajax {
 	private $nonce;
 	private $ajax_error;
 
+	private static $doing_rest = null;
 	private static $zukit_rest_registered = false;
 
 	protected function api_routes() {}
@@ -134,8 +135,11 @@ trait zukit_Ajax {
 
 		$this->routes = $this->api_routes() ?? [];
 
-		add_action('rest_api_init' , [$this, 'init_zukit_api']);
-		add_action('rest_api_init' , [$this, 'init_api']);
+		add_action('rest_api_init', [$this, 'init_zukit_api']);
+		add_action('rest_api_init', [$this, 'init_api']);
+	}
+	public function rest_action() {
+		$this->logd('rest_action', '!');
 	}
 
 	public function init_zukit_api() {
@@ -143,10 +147,26 @@ trait zukit_Ajax {
 		if(self::$zukit_rest_registered) return;
 		$this->init_routes($this->zukit_routes, $this->zukit_api_root, $this->zukit_api_version);
 		self::$zukit_rest_registered = true;
+		self::$doing_rest = true;
 	}
 
 	public function init_api() {
 		$this->init_routes($this->routes, $this->api_root, $this->api_version);
+	}
+
+	// 'REST_REQUEST' is only available after the 'rest_api_init' action
+	public function doing_rest() {
+		// trying to determine that this is a 'REST_REQUEST' before 'rest_api_init' action
+		// by analyzing 'REQUEST_URI'. Not sure if this is a reliable method,
+		// but I haven't come up with anything better yet...
+		if(self::$doing_rest === null) {
+			$uri = $_SERVER['REQUEST_URI'] ?? '';
+			$prefix = rest_get_url_prefix();
+			if(substr($uri, 0, strlen($prefix) + 2) === sprintf('/%s/', $prefix)) {
+				self::$doing_rest = true;
+			}
+		}
+		return self::$doing_rest;
 	}
 
 	private function init_routes($routes, $api_root, $api_version) {
@@ -268,7 +288,7 @@ trait zukit_Ajax {
 	public function ajax_reset_options() {
 		$options = $this->reset_options();
 		return $this->create_notice('infodata', // combine 'info' with 'data'
-			sprintf( 'Plugin <strong>"%1$s"</strong> settings are reset to defaults', $this->data['Name']),
+			sprintf( 'Plugin "**%1$s**" settings are reset to defaults', $this->data['Name']),
 			$options
 		);
 	}
@@ -483,10 +503,8 @@ trait zukit_Ajax {
 		$message = __('Active router not defined', 'zukit');
 		$this->ajax_error($message, $params);
 
-		if($log_errors) {
-			// also log the error as it is quite severe
-			$this->log_error($params, $message);
-		}
+		// also log the error as it is quite severe
+		if($log_errors) $this->logc("?$message", $params);
 
 		return null;
 	}

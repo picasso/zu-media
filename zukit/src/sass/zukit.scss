@@ -106,9 +106,47 @@ $divider-component-class: zukit-divider;
 				.components-notice__content div {
 					display: inline-block;
 				}
+				// I just don't like notifications with a white background
+				.is-info {
+					background-color: rgba($blue-color, 0.1);
+				}
+				.is-warning {
+					background-color: rgba($orange-bright-color, 0.1);
+				}
+
 				span {
-					color: darken($admin-blue-color, 20%);
-					font-weight: 600;
+					letter-spacing: 0.5px;
+					color: darken($admin-magenta-color, 10%);
+					font-weight: 500;
+					background-color: rgba($admin-magenta-color, 0.05);
+					padding: 0 3px 1px;
+					margin: 0 2px;
+					border-radius: $admin-border-radius;
+				}
+				strong {
+					letter-spacing: 0.5px;
+				}
+				em {
+					font-style: normal;
+					letter-spacing: 0.5px;
+					color: darken($wp-admin-blue-color, 10%);
+					font-weight: 500;
+					background-color: rgba($wp-admin-blue-color, 0.1);
+					padding: 0 3px 1px;
+					margin: 0 2px;
+					border-radius: $admin-border-radius;
+					@include in('^.is-success') {
+						color: darken($green-color, 10%);
+						background-color: rgba($green-color, 0.1);
+					}
+					@include in('^.is-error') {
+						color: darken($red-color, 10%);
+						background-color: rgba($red-color, 0.1);
+					}
+					@include in('^.is-warning') {
+						color: darken($orange-bright-color, 10%);
+						background-color: rgba($orange-bright-color, 0.1);
+					}
 				}
 				.zukit-data {
 					height: auto;
@@ -124,6 +162,7 @@ $divider-component-class: zukit-divider;
 			}
 
 			.#{$skeleton-editor-class} {
+				background-color: transparent;
 				position: relative;
 				padding-top: 50px;
 				flex: 1 1 auto;
@@ -215,8 +254,35 @@ $divider-component-class: zukit-divider;
 				color: $toggle-help-color;
 				font-size: 13px;
 				font-style: italic;
+				text-align: right;
 				@include breakpoint-width(LESS_SETTINGS_BREAK) {
 					margin-left: 0;
+					text-align: left;
+				}
+			}
+
+			// markdown css
+			.components-base-control__help, .__zu_markdown {
+				span {
+					letter-spacing: 0.5px;
+					color: darken($admin-magenta-color, 10%);
+					font-weight: 500;
+					background-color: rgba($admin-magenta-color, 0.05);
+					padding: 0 3px 1px;
+					margin: 0 2px;
+					border-radius: $admin-border-radius;
+				}
+				strong {
+					letter-spacing: 0.5px;
+				}
+				em {
+					letter-spacing: 0.5px;
+					color: darken($wp-admin-blue-color, 10%);
+					font-weight: 500;
+					background-color: rgba($wp-admin-blue-color, 0.1);
+					padding: 0 3px 1px;
+					margin: 0 2px;
+					border-radius: $admin-border-radius;
 				}
 			}
 

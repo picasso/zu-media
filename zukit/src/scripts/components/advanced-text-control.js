@@ -3,14 +3,14 @@
 const { isNil, isEmpty, debounce } = lodash;
 const { __ } = wp.i18n;
 const { Button, TextControl, Tooltip } = wp.components;
-const { useCallback, useState } = wp.element;
+const { useCallback, useState, useEffect } = wp.element;
 
 // Internal dependencies
 
 import { mergeClasses, uniqueValue } from './../utils.js';
 import ConditionalWrap from './conditional-wrap.js';
 
-// Zukit Text Control Component
+// Zukit Advanced Text Control Component
 
 const labels = {
 	show: __('Show Password', 'zukit'),
@@ -30,10 +30,16 @@ const isKind = (kind, value) => {
 	return re.test(value);
 }
 
+const setValidatedValue = (val, withoutValues, fallbackValue, kind, emptyIfFailed = false) => {
+	const value = isEmpty(withoutValues) ? val : uniqueValue(val, withoutValues, fallbackValue);
+	return isKind(kind, value) ? value : (emptyIfFailed ? '' : null);
+}
+
 const AdvTextControl = ({
 		className,
 		isPassword,
 		showTooltip = true,
+		tooltipPosition = 'top center',
 		withoutClear,
 		label,
 		value,
@@ -50,37 +56,59 @@ const AdvTextControl = ({
 }) => {
 
 	const [visible, setVisible] = useState(false);
+	const [debounceActive, setDebounceActive] = useState(false);
 	const controlType = isPassword ? (visible ? 'text' : 'password') : (type || 'text');
 	const controlIcon = isPassword ? (visible ? 'hidden' : 'visibility') : 'no-alt';
 	const controlTooltip = isPassword ? (visible ? labels.hide : labels.show) : labels.clear;
 
-	const onClick = useCallback(() => isPassword ? setVisible(!visible) : onChange(''), [isPassword, visible, onChange]);
+	const onClear = useCallback(() => {
+		setTemporaryValue('');
+		onChange('');
+	}, [onChange]);
+
+	const onClick = useCallback(() => isPassword ? setVisible(!visible) : onClear(), [isPassword, visible, onClear]);
 
 	// Debounce ---------------------------------------------------------------]
 
 	// using temporaryName while debouncing name changes
-	const [ temporaryValue, setTemporaryValue ] = useState(value);
+	const [ temporaryValue, setTemporaryValue ] = useState(
+		setValidatedValue(value, withoutValues, fallbackValue, strict, true)
+	);
 
 	// using debouncing to reduce the number of calls to the onChange handler
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 	const onUpdateValue = useCallback(
 		debounce(value => {
 			onChange(value);
+			setDebounceActive(false);
 		}, debounceDelay)
 	, [onChange, debounceDelay]);
 
 	const onChangeValue = useCallback(value => {
+		setDebounceActive(true);
 		setTemporaryValue(value);
 		onUpdateValue(value);
 	}, [onUpdateValue]);
+
+	// sync 'temporaryValue' and 'value' what can happen if 'value' was changed outside the component и
+	// after the component has been mounted and the 'temporaryValue' state has already been initialized
+	useEffect(() => {
+		if(debounceActive === false) {
+			if(temporaryValue !== value) {
+				const newValue = setValidatedValue(value, withoutValues, fallbackValue, strict, true);
+				if(newValue !== value) onChange(newValue);
+				if(newValue !== temporaryValue) setTemporaryValue(newValue);
+			}
+		}
+	}, [ debounceActive, value, onChange, temporaryValue, withoutValues, fallbackValue, strict]);
 
 	// Validate ---------------------------------------------------------------]
 
 	const withButton = isPassword || !withoutClear;
 
 	const onValidatedChange = useCallback(val => {
-		const value = isEmpty(withoutValues) ? val : uniqueValue(val, withoutValues, fallbackValue);
-		if(isKind(strict, value)) {
+		const value = setValidatedValue(val, withoutValues, fallbackValue, strict);
+		if(value !== null) {
 			if(withDebounce) onChangeValue(value);
 			else onChange(value);
 		}
@@ -108,7 +136,8 @@ const AdvTextControl = ({
 					wrap={ Tooltip }
 					condition={ showTooltip }
 					text={ controlTooltip }
-					position="top center"
+					position={ tooltipPosition }
+					noArrow={ false }
 				>
 					<Button
 						className={ mergeClasses('__exclude',

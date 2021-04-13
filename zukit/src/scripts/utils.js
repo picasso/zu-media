@@ -9,10 +9,17 @@ const { __ } = wp.i18n;
 const { Path, G, SVG } = wp.components;
 const { getCategories, setCategories, registerBlockCollection } = wp.blocks;
 
+let extData = null;
 // Gets JSON data from PHP
 export function externalData(key, defaultValues = null) {
 	const { data = {} } =  window[key] || {};
-	return _.isEmpty(defaultValues) ? data : _.defaults(data, defaultValues);
+	extData = _.isEmpty(defaultValues) ? data : _.defaults(data, defaultValues);
+	return extData;
+}
+// Allows multiple access to external data after calling 'externalData' function
+export function getExternalData(key = null, defaultValue = null) {
+	if(key === null) return extData;
+	return _.get(extData, key, defaultValue);
 }
 
 // Just a more familiar name
@@ -62,13 +69,26 @@ export function getIds(items, asString = false) {
 }
 
 export function checkDependency(item, options, isAction = false, withPath = null) {
-	const depends = isAction ? item : _.get(item, 'depends');
+	let depends = isAction ? item : _.get(item, 'depends');
+
+	// special case when we need to avoid the element with the key 'hasMoreActions'
+	if(_.get(item, 'hasMoreActions') === true) return false;
 	if(_.isNil(depends)) return true;
 	if(depends === false) return false;
 
-	const cleanKey = _.trimStart(depends, '!');
-	const value =_.get(options, withPath ? `${withPath}.${cleanKey}` : cleanKey, false);
-	return _.startsWith(depends, '!') ? !value : value;
+	depends = _.castArray(depends);
+
+	// the first element of the array determines what the logical operator will be (comparison by AND or OR)
+	// if the first element is not equal to '&&' or '||', then the comparison will be by OR
+	const logicalOp = depends[0] === '&&' || depends[0] === '||';
+	const logicalAND = depends[0] === '&&';
+
+	return _.reduce(logicalOp ? _.drop(depends, 1) : depends, (acc, dependencyKey) => {
+		const cleanKey = _.trimStart(dependencyKey, '!');
+		let value = _.get(options, withPath ? `${withPath}.${cleanKey}` : cleanKey, false);
+		value = _.startsWith(depends, '!') ? !value : value;
+		return acc === null ? value : (logicalAND ? acc && value : acc || value);
+	}, null);
 }
 
 // Convert object to JSON
@@ -101,7 +121,8 @@ export const uniqueValue = (value, forbiddenValues, fallback = 'name') => {
 // Add error value (if present) to the message, converting any object to a string
 export function messageWithError(message, value = null) {
 
-	if(_.isNil(value)) return message;
+	const mdMessage = simpleMarkdown(message, { raw: true, br: true, json: true });
+	if(_.isNil(value)) return mdMessage;
 
 	value = _.isArray(value) || _.isPlainObject(value) ? toJSON(value) : String(value);
 	value = value
@@ -109,7 +130,7 @@ export function messageWithError(message, value = null) {
 		.replace(/,\s*/g, ',  ')
 		.replace(/"([^"]+)":/g, '<b>$1</b>: ');
 
-	return message.replace(/[:|.]\s*$/g, '') + `: <span class="zukit-data">${value}</span>`;
+	return mdMessage.replace(/[:|.]\s*$/g, '') + `: <span class="zukit-data">${value}</span>`;
 }
 
 // Returns SVG with a reference to an already loaded SVG set
@@ -146,7 +167,7 @@ export function hexToRGBA(hex, alpha, asObject = false) {
 	return asObject ? rgba : `rgba(${rgba.r},${rgba.g},${rgba.b},${rgba.a})`;
 }
 
-// compare version numbers with segments
+// Compare version numbers with segments
 // Return values:
 // 		a number < 0 if a < b
 //		a number > 0 if a > b
@@ -165,6 +186,123 @@ export function compareVersions(a, b) {
     return segmentsA.length - segmentsB.length;
 }
 
+// Converts a string to a set of React components based on simple Markdown constructs
+// replaces *text* with <em>text</em>
+// replaces **text** with <strong>text</strong>
+// replaces `text` with <span>text</span>
+// replaces [text](link) with <a href="link">text</a>
+// replaces newlines with <p> or <br/> if 'params.br' is true
+// also replaces $link<index> constructs with elements from the 'params.links' array
+export function simpleMarkdown(string, params) {
+
+	if(!_.isString(string)) return string;
+
+	const mod = _.defaults(params, {
+		links: null,
+		br: false,
+		externalLink: true,
+		raw: false,
+		json: false,
+	});
+
+	let linkReplace = '<a href="$2" target="_blank" rel="external noreferrer noopener">$1</a>';
+	if(mod.externalLink) linkReplace = linkReplace.replace('<a', '<a class="components-external-link"');
+
+	// replace links
+	let md = _.reduce(_.castArray(mod.links || []), (msg, link, index) => msg.replace(`$link${index + 1}`, link), string);
+	// replace <strong>
+	md = md.replace(/\*\*([^*]+)\*\*/gm, '<strong>$1</strong>');
+	// replace <em>
+	md = md.replace(/(^|[^*])\*([^*]+)\*/gm, '$1<em>$2</em>');
+	// replace <span>
+	md = md.replace(/(^|[^`])`([^`]+)`/gm, '$1<span>$2</span>');
+	// replace <a>
+	md = md.replace(/\[([^\]]+)\]\(([^)]+)\)/gm, linkReplace);
+
+	// add <p></p> or <br/> if '\n' are found
+	if(_.includes(md, '\n') || (mod.json && _.includes(md, '\\n'))) {
+		const regex = mod.json ? /\\n/gm : /\n/gm;
+		if(mod.br) md = md.replace(regex, '<br/>');
+		else md = md.split(mod.json ? '\\n' : '\n').map(line => `<p>${line}</p>`).join('');
+	}
+
+	// return earlier if 'raw' output requested or no tags are found
+	if(mod.raw) return md;
+	if(md.match(/<[^<]+>/gm) === null) return string;
+
+	const body = string2dom(md);
+
+	return (
+		<>
+			{ _.map(body.childNodes, node2comp) }
+		</>
+	);
+}
+
+function string2dom(string) {
+	const el = document.createElement('html');
+	el.innerHTML = string;
+	return _.find(el.childNodes, { nodeName: 'BODY' });
+}
+
+function styledIcon(icon) {
+	const styled = {
+		width: '1.4em',
+		height: '1.4em',
+		margin: '-0.2em 0.1em 0 0.2em',
+		verticalAlign: 'middle',
+		fill: 'currentColor',
+	}
+	const icons = {
+		external: "M18.2 17c0 .7-.6 1.2-1.2 1.2H7c-.7 0-1.2-.6-1.2-1.2V7c0-.7.6-1.2 "+
+		"1.2-1.2h3.2V4.2H7C5.5 4.2 4.2 5.5 4.2 7v10c0 1.5 1.2 2.8 2.8 2.8h10c1.5 0 2.8-1.2 "+
+		"2.8-2.8v-3.6h-1.5V17zM14.9 3v1.5h3.7l-6.4 6.4 1.1 1.1 6.4-6.4v3.7h1.5V3h-6.3z",
+	}
+	return (
+		<SVG
+			xmlns="http://www.w3.org/2000/svg"
+			viewBox="0 0 24 24"
+			width="24"
+			height="24"
+			className="components-external-link__icon"
+			role="img"
+			aria-hidden="true"
+			focusable="false"
+			style={ styled }
+		>
+			<Path d={ _.get(icons, icon, '') }/>
+		</SVG>
+	);
+}
+
+function node2comp(node, index) {
+	const tag = String(node.nodeName).toLowerCase();
+
+	if(tag === 'strong') return <strong key={ index } className={ node.className || null }>{ node.textContent }</strong>;
+	if(tag === 'em') return <em key={ index } className={ node.className || null }>{ node.textContent }</em>;
+	if(tag === 'span') return <span key={ index } className={ node.className || null }>{ node.textContent }</span>;
+	if(tag === 'br') return <br key={ index }></br>;
+	if(tag === '#text') return node.textContent;
+	if(tag === 'p') return  <p  key={ index } className={ node.className || null }>{ _.map(node.childNodes, node2comp) }</p>;
+	if(tag === 'a') return (
+		<a
+			key={ index }
+			className={ node.className || null }
+			href={ node.href }
+			rel={ node.rel }
+			target={ node.target }
+		>
+			{ _.map(node.childNodes, node2comp) }
+			{ _.includes(node.className, 'components-external-link') &&
+				<>
+					<span className="components-visually-hidden">(opens in a new tab)</span>
+					{ styledIcon('external') }
+				</>
+			}
+		</a>
+	);
+}
+
 // Some useful data -----------------------------------------------------------]
 
 export const emptyGif = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
@@ -177,7 +315,6 @@ export function getColor(key) {
 }
 
 // Brand assets ---------------------------------------------------------------]
-
 
 export const brandAssets = {
 	namespace: 'zu',
@@ -195,8 +332,20 @@ brandAssets.icon = (
 	xmlns="http://www.w3.org/2000/svg"
 >
 	<G>
-		<Path d="M15.22,6.873 C15.22,6.873 14.383,8.096 13.914,12.049 C13.445,16.006 17.266,15.5 17.266,15.5 Q19.264,15.312 19.264,13.224 C19.264,13.224 19.172,6.516 19.264,6.873 C20.766,9.109 23.242,6.873 23.242,6.873 L23.242,13.993 Q23.242,16.279 21.737,17.422 Q20.231,18.565 17.242,18.565 Q14.42,18.27 12.914,17.127 C12.914,17.127 11.336,16.393 10.367,13.908 C9.107,10.676 11.242,6.873 11.242,6.873 z" fill={ brandAssets.color }/>
-		<Path d="M7.448,14.858 C8.266,16.469 11.164,15.236 11.164,15.236 L17.242,18.565 L0.758,18.565 L6.08,10.203 L1.47,10.203 C1.47,10.203 3.141,7.828 1.47,6.873 C0.922,6.844 12.742,6.873 12.742,6.873 C12.742,6.873 6.256,12.508 7.448,14.858 z" fill={ brandAssets.color }/>
+		<Path d={
+			"M15.22,6.873 C15.22,6.873 14.383,8.096 13.914,12.049 C13.445,16.006 "+
+			"17.266,15.5 17.266,15.5 Q19.264,15.312 19.264,13.224 C19.264,13.224 "+
+			"19.172,6.516 19.264,6.873 C20.766,9.109 23.242,6.873 23.242,6.873 "+
+			"L23.242,13.993 Q23.242,16.279 21.737,17.422 Q20.231,18.565 17.242,18.565 "+
+			"Q14.42,18.27 12.914,17.127 C12.914,17.127 11.336,16.393 10.367,13.908 C9.107,10.676 11.242,6.873 11.242,6.873 z" }
+			fill={ brandAssets.color }
+		/>
+		<Path d={
+			"M7.448,14.858 C8.266,16.469 11.164,15.236 11.164,15.236 L17.242,18.565 "+
+			"L0.758,18.565 L6.08,10.203 L1.47,10.203 C1.47,10.203 3.141,7.828 1.47,6.873 "+
+			"C0.922,6.844 12.742,6.873 12.742,6.873 C12.742,6.873 6.256,12.508 7.448,14.858 z" }
+			fill={ brandAssets.color }
+		/>
 	</G>
 </SVG>
 );
@@ -234,6 +383,7 @@ export const blocksSet = {
 	registerCategory,
 	registerCollection,
 	externalData,
+	getExternalData,
 	mergeClasses,
 	hexToRGB,
 	hexToRGBA,
@@ -246,6 +396,8 @@ export const blocksSet = {
 	toJSON,
 	uniqueValue,
 	svgRef,
+	compareVersions,
+	simpleMarkdown,
 	emptyGif,
 	brandAssets,
 };

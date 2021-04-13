@@ -165,7 +165,7 @@ $folders-blue: rgb(0, 117, 175);
 $link-color-hover: rgba($folders-blue, 0.8);
 $link-color-selected: #016087;
 $breadcrumb-color: $wp-gray-700;
-
+$text-shadow-for-white: 0 1px 3px rgba(black, 0.3) !default;
 
 $facebook-color: #3b5998;
 $twitter-color: #00aced;
@@ -215,6 +215,7 @@ $admin-control-font-family: Ubuntu,'Open Sans','Helvetica Neue',sans-serif;
 $admin-control-selected-color: rgba($admin-control-highlight-color, 0.3);
 $admin-control-text-color: $admin-dark;
 
+$admin-border-radius: 3px;
 $admin-button-wrapper-padding: 3px;
 $admin-button-wrapper-margin: 4px;
 $admin-control-border-box-size: 3px;
