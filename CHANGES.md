@@ -1,3 +1,11 @@
+#### 2.2.2 / 2021-03-26
+* fixed bug with loading `preview` styles in add-on
+* fixed bug with reloading `Sizes` table
+* adapted after refactoring `selectOption` and `toggleOption`
+* adapted after changing the position of the divider
+* adapted to other changes in Zukit
+* small CSS improvements
+
 ### 2.2.1 ###
 * added logic for icons in WP version up to 5.5
 * improved JS and CSS for WP with version less than 5.5
