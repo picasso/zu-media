@@ -3,7 +3,7 @@ Contributors: dmitryrudakov
 Tags: gutenberg, folders, dominant color, admin, media library folders, media library
 Requires at least: 5.1.0
 Tested up to: 5.7
-Stable tag: 2.2.1
+Stable tag: 2.2.2
 License: GPLv2 or later
 Requires PHP: 7.0.0
 
@@ -56,6 +56,14 @@ This plugin includes several enhancements to the WordPress Media Library that ca
 6. Folders Toolbar
 
 == Changelog ==
+
+### 2.2.2 ###
+* fixed bug with loading `preview` styles in add-on
+* fixed bug with reloading `Sizes` table
+* adapted after refactoring `selectOption` and `toggleOption`
+* adapted after changing the position of the divider
+* adapted to other changes in Zukit
+* small CSS improvements
 
 ### 2.2.1 ###
 * added logic for icons in WP version up to 5.5
@@ -140,12 +148,4 @@ This plugin includes several enhancements to the WordPress Media Library that ca
 ### 1.8.7 ###
 * improved `All Attachements` table
 * modified `is_private_album()` function to return `1` or `2` depending on album privacy
-
-### 1.8.6 ###
-* added check for `_private` in folder name inside Media Library (all images in such folders considered as `private`)
-* added `is_private_album()` and `get_private_images()` functions to work with `private` images
-* added `get_all_images_in_album()` function which collects all images in folder including subfolders
-* gallery shortcode: `ajaxed` attribute was renamed to `lazyload`
-* added `no_lazyload` attribute to `gallery` shortcode
-* improved `alt` transformation in `figure` repeater
 
