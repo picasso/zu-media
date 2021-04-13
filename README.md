@@ -1,4 +1,4 @@
-# Zu Media: Media Library with folders, dominant colors and more.
+# Zu Media: Media Library with folders and more.
 
 [![WordPress Plugin Version](https://img.shields.io/wordpress/plugin/v/zu-media?style=for-the-badge)]()
 [![WordPress Plugin: Tested WP Version](https://img.shields.io/wordpress/plugin/tested/zu-media?color=4ab866&style=for-the-badge)]()
