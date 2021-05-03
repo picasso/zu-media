@@ -152,7 +152,7 @@ class zu_MediaImageSizes extends zukit_Addon {
 
 		function asSize($value) {
 			$value = intval($value);
-			return $value === 0 || $value === 9999 ? 'proportional' : $value.'px';
+			return $value === 0 || $value === 9999 ? '`proportional`' : sprintf('**%s**&nbsp;px', $value);
 		}
 
 		function asKind($wp, $zu, $is_modified, $icon) {
@@ -168,21 +168,22 @@ class zu_MediaImageSizes extends zukit_Addon {
 			];
 		}
 
-		function asCrop($crop) {
+		function asCrop($crop, $modified_style) {
 			$crop = is_numeric($crop) || is_bool($crop) ? (bool)$crop : (implode(' ,', $crop) ?? '?');
 			$tooltip = is_string($crop) ? $crop : ($crop ? __('Yes', 'zu-media') : __('No', 'zu-media'));
 
 			return [
 				'tooltip'	=> $tooltip,
 				'dashicon'	=> $crop ? 'yes' : 'no',
+				'style'		=> $crop ? $modified_style : null,
 			];
 		}
 
 		// define table columns and styles
 		$table = new zukit_Table(['kind', 'name', 'width', 'height', 'crop']);
 		$table->align(['kind', 'width', 'height'], 'center');
-		$table->classes('name', '__zu_strong');
-		$table->classes(['kind', 'crop'], '__zu_icon');
+		$table->strong('name');
+		$table->as_icon(['kind', 'crop']);
 
 		$rows = [];
 		$zu_icon = $this->get('appearance.icon', true);
@@ -190,11 +191,11 @@ class zu_MediaImageSizes extends zukit_Addon {
 
 		foreach($this->sizes as $name => $size) {
 			$is_modified = $original && $size['wp'] && $size['width'] != $original[$name]['width'];
-			$table->iconcell('kind', asKind($size['wp'], $size['zu'], $is_modified ? $this->modified_style() : null, $zu_icon));
+			$table->icon_cell('kind', asKind($size['wp'], $size['zu'], $is_modified ? $this->modified_style() : null, $zu_icon));
 			$table->cell('name', $name);
-			$table->cell('width', asSize($size['width']), $is_modified ? $this->modified_style() : null);
-			$table->cell('height', asSize($size['height']));
-			$table->iconcell('crop', asCrop($size['crop']));
+			$table->markdown_cell('width', asSize($size['width']), null, $is_modified ? $this->modified_style() : null);
+			$table->markdown_cell('height', asSize($size['height']));
+			$table->icon_cell('crop', asCrop($size['crop'], $this->modified_style()));
 
 			$table->next_row();
 		}
