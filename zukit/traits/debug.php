@@ -5,6 +5,7 @@
 trait zukit_Debug {
 
 	private static $debug_prefix = '_debug';
+	private static $log_shift = 0;
 
 	private function debug_def_options() {
 		return [
@@ -72,17 +73,24 @@ trait zukit_Debug {
 		return $this->is_option($this->debug_path($key), $check_value);
 	}
 
+	public function debug_line_shift($shift = 0) {
+		if($shift === null) return self::$log_shift;
+		else self::$log_shift = $shift;
+	}
+
 	// Log methods ------------------------------------------------------------]
 
 	// overriding the 'log', 'logc' and 'logfile_clear' methods from the Zu+ plugin, if available
 	public function log(...$params) {
+
 		if(function_exists('zuplus')) zuplus()->dlog($params, static::class);
-        else parent::log_with(0, null, ...$params);
+        else parent::log_with(self::$log_shift, null, ...$params);
     }
 
 	public function logc($context, ...$params) {
+		$this->logd('params', $params);
 		if(function_exists('zuplus')) zuplus()->dlogc($context, $params, static::class);
-        else parent::log_with(0, $context, ...$params);
+        else parent::log_with(self::$log_shift, $context, ...$params);
     }
 
 	protected function logfile_clean() {

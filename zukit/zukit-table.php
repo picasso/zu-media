@@ -56,7 +56,7 @@ class zukit_Table {
 		$validated = [];
 		foreach($params as $key => $value) {
 			if($value === 'markdown') $validated[$value] = true;
-			else if(is_array($value) && zu_snippets()->validate_url($value[0])) {
+			else if($key === 'link' && is_array($value) && zu_snippets()->validate_url($value[0])) {
 				$validated['link'] = [
 					'href'	=> $value[0],
 					'title' => $value[1] ?? ''
@@ -127,7 +127,7 @@ class zukit_Table {
 		$this->config($cells, 'className', '__zu_shrink');
 	}
 
-	public function fixwidth($cells, $styles = null) {
+	public function fix_width($cells, $styles = null) {
 		$this->config($cells, 'className', '__zu_fixwidth');
 		if(is_string($cells)) $cells = [$cells];
 		if(is_string($styles)) $styles = [$styles];
@@ -166,7 +166,7 @@ class zukit_Table {
 		}
 	}
 
-	public function iconcell($name, $dashicon, $svg = null, $tooltip = null, $style = null) {
+	public function icon_cell($name, $dashicon, $svg = null, $tooltip = null, $style = null) {
 		if($this->has($name)) {
 			$icon = [];
 			if(is_array($dashicon)) {
@@ -186,7 +186,7 @@ class zukit_Table {
 		}
 	}
 
-	public function markdowncell($name, $content, $align = null, $style = null) {
+	public function markdown_cell($name, $content, $align = null, $style = null) {
 		if($this->has($name)) {
 			$this->row[$name] = $this->generate_cell(
 				$content,
@@ -197,13 +197,27 @@ class zukit_Table {
 		}
 	}
 
-	public function linkcell($name, $href, $title = '', $align = null, $style = null) {
+	public function link_cell($name, $href, $title = '', $align = null, $style = null) {
 		if($this->has($name)) {
 			$this->row[$name] = $this->generate_cell(
 				$title,
 				$style,
 				$align,
 				['link' => [$href, $title]]
+			);
+		}
+	}
+
+	public function dynamic_cell($name, $params = [], $defaultContent = null, $className = null) {
+		if($this->has($name)) {
+			$this->row[$name] = $this->generate_cell(
+				$defaultContent,
+				null,
+				null,
+				[
+					'dynamic'	=> array_merge($params, array_key_exists('id', $params ?? []) ? [] : ['id' => $name]),
+					'className'	=> $className,
+				]
 			);
 		}
 	}

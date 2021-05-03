@@ -1,3 +1,20 @@
+#### 1.2.3 / 2021-05-03
+* fixed bug with headers in `ZukitTable` component
+* fixed bug for `Prevent Script Caching` when dealing with `zukit.min.js`
+
+#### 1.2.2 / 2021-05-03
+* implemented dynamic cells for `ZukitTable` component
+* implemented support for `GitHub` __uri__ in `info` method
+* rows in `Plugin Info` are now hidden through the `value` equal to __null__
+* added class to markdown `code` output
+* added simple markdown support to `Plugin Info` panel
+* refactoring markdown css with SASS placeholders
+* added `$template` arg for `format_bytes` method in __snippets__
+* min `php` and `wp` versions updated
+* refactoring `nonce` for add-ons
+* fixed bug with `log` and `logc` methods for add-ons
+* small CSS improvements
+
 #### 1.2.0 / 2021-04-13
 * refactoring `zukit_Singleton` to use `zukit_Logging` and `zukit_Scripts` traits
 * added support for __Zukit__ version

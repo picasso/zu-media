@@ -14,7 +14,7 @@ require_once('traits/debug.php');
 
 class zukit_Plugin extends zukit_SingletonScripts {
 
-	private static $zukit_version = '1.2.0'; // (modified)';
+	private static $zukit_version = '1.2.3'; //.' (modified)';
 
 	public $config;
 
@@ -483,7 +483,8 @@ class zukit_Plugin extends zukit_SingletonScripts {
 			$zukit_params = [
 				'data'		=> null,
 				'deps'		=> $js_deps,
-				'handle'	=> 'zukit'
+				'handle'	=> 'zukit',
+				'refresh'	=> $this->refresh_scripts,
 			];
 			$this->admin_enqueue_script('!zukit', $zukit_params);
 			$this->admin_enqueue_style('!zukit', array_merge($zukit_params, ['deps'	=> $css_deps]));

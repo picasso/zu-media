@@ -17,7 +17,7 @@ trait zusnippets_Useful {
 		);
 	}
 
-	public function format_bytes($bytes, $precision = 0, $approximately_sign = false) {
+	public function format_bytes($bytes, $precision = 0, $approximately_sign = false, $template = null) {
 	    $units = array('Bytes', 'KB', 'MB', 'GB', 'TB');
 		$sign = $approximately_sign && $bytes !== 0 ? '~' : '';
 
@@ -26,8 +26,9 @@ trait zusnippets_Useful {
 	    $pow = min($pow, count($units) - 1);
 
 	    $bytes /= pow(1024, $pow);
+		$format = $template ?? '%s %s';
 
-	    return $sign . round($bytes, $precision) . ' ' . $units[$pow];
+	    return $sign . sprintf($format, round($bytes, $precision), $units[$pow]);
 	}
 
 	public function insert_svg_from_file($path, $name, $params) {
@@ -70,7 +71,7 @@ trait zusnippets_Useful {
 		return $this->remove_space_between_tags($svg);
 	}
 
-	// Checks the validity of the URL 
+	// Checks the validity of the URL
 	// With default parameters, URLs without protocol and domain are considered valid (relative URLs)
 	// using arguments, you can specify whether the presence of the domain and the protocol is necessary
 	public function validate_url($value, $maybe_without_domain = true, $maybe_without_protocol = true) {

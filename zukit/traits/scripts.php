@@ -140,6 +140,7 @@ trait zukit_Scripts {
             //     '$handle'       => $handle,
             //     '$data'         => $data,
             //     '$refresh'      => $refresh,
+            //     '$version'      => $version,
             //     '$deps'         => $deps,
             //     '$bottom'       => $bottom,
             // ]);
