@@ -17,9 +17,19 @@ import { usePanels } from './../hooks/use-panels.js';
 import NoticesContext from './../hooks/use-notices.js';
 import ZukitSidebar from './sidebar.js';
 
-// Zukit Skeleton Component
-
-const cprefix = 'zukit-skeleton';
+// const editorClasses = {
+// 	skeleton: 'block-editor-editor-skeleton',
+// 	body: 'block-editor-editor-skeleton__body',
+// 	content: 'block-editor-editor-skeleton__content',
+// 	sidebar: 'block-editor-editor-skeleton__sidebar',
+// };
+//
+// const editorClasses55 = {
+// 	skeleton: 'interface-interface-skeleton',
+// 	body: 'interface-interface-skeleton__body',
+// 	content: 'interface-interface-skeleton__content',
+// 	sidebar: 'interface-interface-skeleton__sidebar',
+// };
 
 function editorClasses(element, more = '', wp = null) {
 	const layout = 'edit-post-layout is-mode-visual is-sidebar-opened';
@@ -38,20 +48,9 @@ function editorClasses(element, more = '', wp = null) {
 	return (`${classes} ${more}`).trim();
 }
 
-// const editorClasses = {
-// 	skeleton: 'block-editor-editor-skeleton',
-// 	body: 'block-editor-editor-skeleton__body',
-// 	content: 'block-editor-editor-skeleton__content',
-// 	sidebar: 'block-editor-editor-skeleton__sidebar',
-// };
-//
-// const editorClasses55 = {
-// 	skeleton: 'interface-interface-skeleton',
-// 	body: 'interface-interface-skeleton__body',
-// 	content: 'interface-interface-skeleton__content',
-// 	sidebar: 'interface-interface-skeleton__sidebar',
-// };
+// Zukit Skeleton Component
 
+const cprefix = 'zukit-skeleton';
 
 const ZukitSkeleton = ({
 		id,

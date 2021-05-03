@@ -270,8 +270,9 @@ trait zukit_Ajax {
 		return false;
 	}
 
-	public function ajax_nonce($create = false) {
-		return $create ? wp_create_nonce($this->nonce) : $this->nonce;
+	public function ajax_nonce($create = false, $action = null) {
+		$action = empty($action) ? $this->nonce : $action;
+		return $create ? wp_create_nonce($action) : $action;
 	}
 
 	// Generic Ajax Actions ---------------------------------------------------]

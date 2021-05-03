@@ -7,8 +7,8 @@ if(!class_exists('Zukit')) {
 	class Zukit {
 
 		private static $requires = array(
-			'min_php'	=> '7.0.0',
-			'min_wp'	=> '5.1.0',
+			'min_php'	=> '7.2.0',
+			'min_wp'	=> '5.3.0',
 		);
 
 		// The constructor should always be private to prevent direct
@@ -42,24 +42,22 @@ if(!class_exists('Zukit')) {
 		}
 
 		public static function plugin_data($plugin_file) {
-			if(!function_exists('get_plugin_data')) {
-				$default_headers = array(
-			        'Name'        => 'Plugin Name',
-			        'PluginURI'   => 'Plugin URI',
-			        'Version'     => 'Version',
-			        'Description' => 'Description',
-			        'Author'      => 'Author',
-			        'AuthorURI'   => 'Author URI',
-			        'TextDomain'  => 'Text Domain',
-			        'DomainPath'  => 'Domain Path',
-			        'Network'     => 'Network',
-			        'RequiresWP'  => 'Requires at least',
-			        'RequiresPHP' => 'Requires PHP',
-			    );
-				return get_file_data($plugin_file, $default_headers, 'plugin');
-		    } else {
-				return get_plugin_data($plugin_file, false, false);
-			}
+			$default_headers = array(
+		        'Name'        		=> 'Plugin Name',
+		        'PluginURI'   		=> 'Plugin URI',
+				'GitHubPluginURI'	=> 'GitHub Plugin URI',
+				'GitHubURI'			=> 'GitHub URI',
+		        'Version'     		=> 'Version',
+		        'Description' 		=> 'Description',
+		        'Author'      		=> 'Author',
+		        'AuthorURI'   		=> 'Author URI',
+		        'TextDomain'  		=> 'Text Domain',
+		        'DomainPath'  		=> 'Domain Path',
+		        'Network'     		=> 'Network',
+		        'RequiresWP'  		=> 'Requires at least',
+		        'RequiresPHP' 		=> 'Requires PHP',
+		    );
+			return get_file_data($plugin_file, $default_headers, 'plugin');
 		}
 
 		// Check if compatible or maybe all parent classes were loaded in other plugin?

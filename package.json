@@ -1,8 +1,8 @@
 {
     "name": "zukit",
-    "version": "1.2.0",
-    "requiresWP": "5.7.0",
-    "requiresPHP": ">=7.1.0",
+    "version": "1.2.3",
+    "testedWP": "5.7.1",
+    "requiresPHP": ">=7.2.0",
     "repository": {
         "type": "git",
         "url": "https://github.com/picasso/zukit.git"
@@ -20,8 +20,8 @@
     "scripts": {},
     "devDependencies": {
         "@wordpress/eslint-plugin": "^7.2.1",
-        "eslint": "^7.10.0",
-        "eslint-plugin-react": "^7.21.3",
+        "eslint": "^7.24.0",
+        "eslint-plugin-react": "^7.23.2",
         "eslint-plugin-react-hooks": "^4.1.2",
         "replace-in-file": "^6.1.0",
         "typescript": "^4.0.3"

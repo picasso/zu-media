@@ -19,9 +19,10 @@ $divider-component-class: zukit-divider;
 
 .zukit-settings {
 
-	#wpfooter {
+	#wpfooter, #update-nag, .update-nag {
 		display: none;
 	}
+
 	.interface-interface-skeleton__body,
 	.block-editor-editor-skeleton__body {
 		padding: 0;
@@ -114,39 +115,20 @@ $divider-component-class: zukit-divider;
 					background-color: rgba($orange-bright-color, 0.1);
 				}
 
-				span {
-					letter-spacing: 0.5px;
-					color: darken($admin-magenta-color, 10%);
-					font-weight: 500;
-					background-color: rgba($admin-magenta-color, 0.05);
-					padding: 0 3px 1px;
-					margin: 0 2px;
-					border-radius: $admin-border-radius;
+				.__code {
+					@extend %markdown_basic;
+					@extend %markdown_code;
 				}
 				strong {
-					letter-spacing: 0.5px;
+					@extend %markdown_strong;
 				}
 				em {
+					@extend %markdown_basic;
+					@extend %markdown_em;
 					font-style: normal;
-					letter-spacing: 0.5px;
-					color: darken($wp-admin-blue-color, 10%);
-					font-weight: 500;
-					background-color: rgba($wp-admin-blue-color, 0.1);
-					padding: 0 3px 1px;
-					margin: 0 2px;
-					border-radius: $admin-border-radius;
-					@include in('^.is-success') {
-						color: darken($green-color, 10%);
-						background-color: rgba($green-color, 0.1);
-					}
-					@include in('^.is-error') {
-						color: darken($red-color, 10%);
-						background-color: rgba($red-color, 0.1);
-					}
-					@include in('^.is-warning') {
-						color: darken($orange-bright-color, 10%);
-						background-color: rgba($orange-bright-color, 0.1);
-					}
+					@include in('^.is-success') { @extend %markdown_green; }
+					@include in('^.is-error') { @extend %markdown_red_on_red; }
+					@include in('^.is-warning') { @extend %markdown_gold; }
 				}
 				.zukit-data {
 					height: auto;
@@ -261,28 +243,21 @@ $divider-component-class: zukit-divider;
 				}
 			}
 
-			// markdown css
-			.components-base-control__help, .__zu_markdown {
-				span {
-					letter-spacing: 0.5px;
-					color: darken($admin-magenta-color, 10%);
-					font-weight: 500;
-					background-color: rgba($admin-magenta-color, 0.05);
-					padding: 0 3px 1px;
-					margin: 0 2px;
-					border-radius: $admin-border-radius;
+			// markdown css in help elements
+			.components-base-control__help {
+				.__code {
+					@extend %markdown_basic;
+					@extend %markdown_code;
+					@include in('^.is-green') { @extend %markdown_green; }
+					@include in('^.is-red') { @extend %markdown_red; }
+					@include in('^.is-gold') { @extend %markdown_gold; }
 				}
 				strong {
-					letter-spacing: 0.5px;
+					@extend %markdown_strong;
 				}
 				em {
-					letter-spacing: 0.5px;
-					color: darken($wp-admin-blue-color, 10%);
-					font-weight: 500;
-					background-color: rgba($wp-admin-blue-color, 0.1);
-					padding: 0 3px 1px;
-					margin: 0 2px;
-					border-radius: $admin-border-radius;
+					@extend %markdown_basic;
+					@extend %markdown_em;
 				}
 			}
 
@@ -352,6 +327,7 @@ $divider-component-class: zukit-divider;
 
 		// Settings Common Rules ----------------------------------------------]
 
+		// flex blocks
 		.__flex {
 			display: flex;
 			align-items: center;
@@ -367,6 +343,24 @@ $divider-component-class: zukit-divider;
 			&.__side {
 				justify-content: space-between;
 				& > * { margin: 0; }
+			}
+		}
+
+		// simple markdown css
+		.__zu_markdown {
+			.__code {
+				@extend %markdown_basic;
+				@extend %markdown_code;
+				@include in('^.is-green') { @extend %markdown_green; }
+				@include in('^.is-red') { @extend %markdown_red; }
+				@include in('^.is-gold') { @extend %markdown_gold; }
+			}
+			strong {
+				@extend %markdown_strong;
+			}
+			em {
+				@extend %markdown_basic;
+				@extend %markdown_em;
 			}
 		}
 

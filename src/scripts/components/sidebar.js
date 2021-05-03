@@ -7,7 +7,7 @@ const { createSlotFill, PanelBody, PanelRow, Button, ExternalLink, ToggleControl
 
 // Internal dependencies
 
-import { mergeClasses, checkDependency } from './../utils.js';
+import { mergeClasses, checkDependency, simpleMarkdown } from './../utils.js';
 import ZukitActionButton from './action-button.js';
 
 // Zukit Sidebar Component
@@ -42,7 +42,7 @@ const ZukitSidebar = ({
 }) => {
 
 	const panels = availablePanels(getPanel(), options);
-	const moreItems = omitBy(more, isNil);
+	const moreItems = omitBy(more, item => isNil(item) || get(item, 'value', null) === null);
 	const pluginActions = pickBy(omitBy(actions, isNil), action => checkDependency(action, options));
 
 	const hasMoreItems = !isEmpty(moreItems);
@@ -77,7 +77,7 @@ const ZukitSidebar = ({
 					</span>
 				</div>
 			</div>
-			<PanelBody title={ __('Plugin Info', 'zukit') } initialOpen={ false }>
+			<PanelBody title={ __('Plugin Info', 'zukit') } className="__plugin_info" initialOpen={ false }>
 				<PanelRow>
 					<span>{ __('Version', 'zukit') }</span>
 					<span>{ version }</span>
@@ -92,7 +92,7 @@ const ZukitSidebar = ({
 							{ link ?
 								<ExternalLink href={ link }>{ value }</ExternalLink>
 								:
-								<span>{ value }</span>
+								<span className="__zu_markdown">{ simpleMarkdown(value, { br: true, json: true }) }</span>
 							}
 						</PanelRow>
 				) }

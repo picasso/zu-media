@@ -59,17 +59,26 @@ trait zukit_Admin {
 	// Wordpress Admin Page ---------------------------------------------------]
 
 	public function info() {
+		$defaultFill = '?';
+		$expectedKeys = ['AuthorURI', 'Description', 'Name', 'Author', 'PluginURI', 'GitHubPluginURI', 'GitHubURI'];
+		$data = array_merge(array_combine(
+		    $expectedKeys,
+		    array_fill(0, count($expectedKeys), $defaultFill)),
+  			$this->data
+		);
 		$domain = $this->text_domain();
-		$link = $this->data['AuthorURI'];
-		$desc = $this->data['Description'];
+		$github = strpos($data['PluginURI'], 'github') !== false ? $data['PluginURI'] : $data['GitHubURI'];
+
 		return [
 			'version'		=> $this->version,
 			// yes, I know that should not use a variable as a text string
 			// 'Poedit' will pull these strings from the plugin description
-			'title'			=> __($this->data['Name'], $domain),
-			'author'		=> __($this->data['Author'], $domain),
-			'link'			=> __($link, $domain),
-			'description'	=> __($desc, $domain),
+			'title'			=> __($data['Name'], $domain),
+			'author'		=> __($data['Author'], $domain),
+			'link'			=> __($data['AuthorURI'], $domain),
+			'description'	=> __($data['Description'], $domain),
+			'uri'			=> $data['PluginURI'],
+			'github'		=> $github === $defaultFill ? $data['GitHubPluginURI'] : $github,
 			'icon'			=> $this->get('appearance.icon'),
 			'colors'		=> $this->get('appearance.colors'),
 			'more' 			=> $this->extend_info(),

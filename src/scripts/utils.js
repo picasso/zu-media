@@ -215,7 +215,7 @@ export function simpleMarkdown(string, params) {
 	// replace <em>
 	md = md.replace(/(^|[^*])\*([^*]+)\*/gm, '$1<em>$2</em>');
 	// replace <span>
-	md = md.replace(/(^|[^`])`([^`]+)`/gm, '$1<span>$2</span>');
+	md = md.replace(/(^|[^`])`([^`]+)`/gm, '$1<span class="__code">$2</span>');
 	// replace <a>
 	md = md.replace(/\[([^\]]+)\]\(([^)]+)\)/gm, linkReplace);
 

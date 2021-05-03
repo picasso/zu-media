@@ -67,3 +67,47 @@ $listinput-component-class: zukit-list-input;
 $advtext-component-class: zukit-text-control;
 $loader-component-class: zukit-loader-control;
 $modal-component-class: zukit-modal;
+
+// simple markdown ------------------------------------------------------------]
+
+%markdown_basic {
+	letter-spacing: 0.5px;
+	font-weight: 500;
+	padding: 0 3px 1px;
+	margin: 0 2px;
+	border-radius: $admin-border-radius;
+}
+
+%markdown_code {
+	color: darken($admin-magenta-color, 10%);
+	background-color: rgba($admin-magenta-color, 0.05);
+}
+
+%markdown_em {
+	color: darken($wp-admin-blue-color, 10%);
+	background-color: rgba($wp-admin-blue-color, 0.1);
+}
+
+%markdown_strong {
+	letter-spacing: 0.5px;
+}
+
+%markdown_green {
+	color: darken($green-color, 10%);
+	background-color: rgba($green-color, 0.1);
+}
+
+%markdown_red {
+	color: darken($red-color, 10%);
+	background-color: rgba($red-color, 0.1);
+}
+
+%markdown_red_on_red {
+	color: darken($red-color, 30%);
+	background-color: rgba($orange-bright-color, 0.2);
+}
+
+%markdown_gold {
+	color: darken($orange-bright-color, 10%);
+	background-color: rgba($orange-bright-color, 0.1);
+}
