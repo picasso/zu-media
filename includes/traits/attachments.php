@@ -48,7 +48,7 @@ trait zu_MediaAttachments {
 		if($sizes_cached !== 0) $sizes_cached = $sizes_cached !== false ? strlen(serialize($sizes_cached)) : 0;
 
 		$cached_memory = ($stats['memory'] ?? 0) + $attachments_cached + $sizes_cached;
-		return $this->snippets('format_bytes', $cached_memory, 1, true);
+		return $this->snippets('format_bytes', $cached_memory, 1, true, '**%s** %s');
 	}
 
 	public function get_cached($cachekey) {
