@@ -55,14 +55,14 @@ class zu_Media extends zukit_Plugin  {
 	protected function extend_info() {
 		$stats = $this->folders ? $this->folders->stats() : [];
 		return [
-			'folders' 		=> empty($stats) ? null : [
+			'folders' 		=> [
 					'label'		=> __('Folders', 'zu-media'),
-					'value'		=> $stats['folders'],
+					'value'		=> empty($stats) ? null : $stats['folders'],
 					'depends' 	=> 'folders',
 			],
-			'galleries' 	=> empty($stats) ? null : [
+			'galleries' 	=> [
 					'label'		=> __('Galleries', 'zu-media'),
-					'value'		=> $stats['galleries'],
+					'value'		=> empty($stats) ? null : $stats['galleries'],
 			],
 			'images'		=> [
 					'label'		=> __('Images', 'zu-media'),
