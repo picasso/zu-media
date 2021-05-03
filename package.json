@@ -1,8 +1,8 @@
 {
     "name": "zumedia",
-    "version": "2.2.0",
-    "testedWP": "5.7.0",
-    "requiresPHP": ">=7.0.0",
+    "version": "2.2.3",
+    "testedWP": "5.7.1",
+    "requiresPHP": ">=7.2.0",
     "author": "Dmitry Rudakov",
     "description": "Enhances WordPress Media Library with some features (folders, dominant color, location category and others).",
     "license": "GPL-2.0-or-later",

@@ -1,11 +1,11 @@
 === Zu Media ===
 Contributors: dmitryrudakov
 Tags: gutenberg, folders, dominant color, admin, media library folders, media library
-Requires at least: 5.1.0
-Tested up to: 5.7
-Stable tag: 2.2.2
+Requires at least: 5.3.0
+Tested up to: 5.7.1
+Stable tag: 2.2.3
 License: GPLv2 or later
-Requires PHP: 7.0.0
+Requires PHP: 7.2.0
 
 Enhances WordPress Media Library with some features (folders, dominant color, location category and others).
 
@@ -56,6 +56,13 @@ This plugin includes several enhancements to the WordPress Media Library that ca
 6. Folders Toolbar
 
 == Changelog ==
+
+### 2.2.3 ###
+* __Zukit__ updated to version 1.2.3
+* modified `Sizes` table according to the changes in __Zukit__
+* min `php` and `wp` versions updated
+* tested for compatibility with WP 5.7.1
+* small improvements
 
 ### 2.2.2 ###
 * fixed bug with loading `preview` styles in add-on
@@ -144,8 +151,4 @@ This plugin includes several enhancements to the WordPress Media Library that ca
 
 ### 1.8.8 ###
 * fixed bug in `All Attachements` table (when Folder is `root`)
-
-### 1.8.7 ###
-* improved `All Attachements` table
-* modified `is_private_album()` function to return `1` or `2` depending on album privacy
 

@@ -1,16 +1,16 @@
 <?php
 /*
 Plugin Name: Zu Media
-Plugin URI: https://github.com/picasso/zumedia
-GitHub Plugin URI: https://github.com/picasso/zumedia
+Plugin URI: https://wordpress.org/plugins/zu-media/
+GitHub Plugin URI: https://github.com/picasso/zu-media
 Description: Enhances WordPress Media Library with some  features (folders, dominant color, location category and others).
-Version: 2.2.2
+Version: 2.2.3
 Author: Dmitry Rudakov
 Author URI: https://dmitryrudakov.ru/about/
 Text Domain: zumedia
 Domain Path: /lang/
-Requires at least: 5.1.0
-Requires PHP: 7.0.0
+Requires at least: 5.3.0
+Requires PHP: 7.2.0
 */
 
 // Prohibit direct script loading

@@ -1,3 +1,10 @@
+#### 2.2.3 / 2021-05-03
+* __Zukit__ updated to version 1.2.3
+* modified `Sizes` table according to the changes in __Zukit__
+* min `php` and `wp` versions updated
+* tested for compatibility with WP 5.7.1
+* small improvements
+
 #### 2.2.2 / 2021-03-26
 * fixed bug with loading `preview` styles in add-on
 * fixed bug with reloading `Sizes` table
