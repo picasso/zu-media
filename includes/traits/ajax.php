@@ -6,6 +6,8 @@ trait zu_MediaAjax {
 
 	public function ajax_more($action, $value) {
 		if($action === 'zumedia_reset_cached') return $this->reset_cached();
+		elseif($action === 'zumedia_reset_cached_collections') return $this->reset_cached_collections();
+		elseif($action === 'zumedia_flush_rewrite') return $this->flush_rewrite_rules();
 		else return null;
 	}
 
@@ -18,15 +20,8 @@ trait zu_MediaAjax {
 			switch($key) {
 				case 'folders':
 					$folder_id = $params['folderId'] ?? null;
-					if(!empty($folder_id)) $result = $this->folders->get_folder_by_id($folder_id);
-					else {
-						$result = [];
-						foreach($this->folders->get_folders() as $index => $value) {
-							$value['order'] = $index;
-							$key = $value['id'];
-						    $result[$key] = $value;
-						}
-					}
+					$folders = $this->get_REST_folders();
+					$result = empty($folder_id) ? $folders : ($folders[$folder_id] ?? []);
 					break;
 
 				case 'galleries':
@@ -46,7 +41,7 @@ trait zu_MediaAjax {
 				// NOTE: Not implemented, not tested... it is not clear if anyone needs it
 				// case 'folder_by_image':
 				// 	$image_id = $params['imageId'] ?? 0;
-				// 	$result = $this->folders->get_folder_by_image_id($image_id);
+				// 	$result = $this->folders->get_folder_by_attachment_id($image_id);
 				// 	break;
 				//
 				// case 'all_images_in_folder':
@@ -57,5 +52,22 @@ trait zu_MediaAjax {
 			}
 		}
 		return $result;
+	}
+
+	private function get_REST_folders() {
+		$folders = $this->folders->get_folders();
+		foreach($folders as $key => $value) {
+			unset($folders[$key]['childs_count'], $folders[$key]['meta']);
+			$folders[$key]['landscaped'] = array_values(array_intersect(
+				$value['images'],
+				$this->get_all_landscaped()
+			));
+		}
+		return $folders;
+	}
+
+	private function flush_rewrite_rules() {
+		flush_rewrite_rules();
+		return $this->create_notice('success', 'WordPress rewrite rules were removed and then recreated.');
 	}
 }

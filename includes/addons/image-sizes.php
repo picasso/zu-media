@@ -43,44 +43,47 @@ class zu_MediaImageSizes extends zukit_Addon {
 	}
 
 	protected function construct_more() {
-		$responsive_support = $this->is_plugin_option('responsive');
+		$responsive_support = $this->is_parent_option('responsive');
 		if($responsive_support) self::backup();
 		else self::restore();
 	}
 
 	public function init() {
 		$this->sizes = $this->get_all_cached_sizes();
-		if($this->is_plugin_option('responsive')) {
+		if($this->is_parent_option('responsive')) {
 			$sizes_to_create = $this->get_sizes_to_create();
 			$this->create_sizes($sizes_to_create);
 			$this->sizes = array_merge($this->sizes, $sizes_to_create);
 		}
 	}
 
+	public function media_size_full_key() {
+		return $this->full_key;
+	}
+
 	private function get_sizes_to_create() {
 		$hdkey = 'full_hd';
-		$this->full_key = $this->is_plugin_option($hdkey) ? $hdkey : 'full';
+		$this->full_key = $this->is_parent_option($hdkey) ? $hdkey : 'full';
 		$sizes_to_create = get_option(self::$zu_sizes_key, []);
 
 		if(!empty($sizes_to_create)) {
-			if(($this->full_key === $hdkey && !array_key_exists($hdkey, $sizes_to_create)) ||
-			   ($this->full_key !== $hdkey && array_key_exists($hdkey, $sizes_to_create))) {
-				   $sizes_to_create = $this->without_wp_sizes();
-			}
-		} else $sizes_to_create = $this->without_wp_sizes();
-
+			$key_exists = array_key_exists($hdkey, $sizes_to_create);
+			$full_key_is_hdkey = $this->full_key === $hdkey;
+			$update_wp_sizes = ($full_key_is_hdkey && !$key_exists) || (!$full_key_is_hdkey && $key_exists);
+		    $sizes_to_create = $this->without_wp_sizes($update_wp_sizes);
+		} else {
+			$sizes_to_create = $this->without_wp_sizes();
+		}
 		// convert to table output format
 		$zu_keys = array_keys(self::$zu_sizes);
 		foreach($sizes_to_create as $size_key => $size) {
 			$sizes_to_create[$size_key]['zu'] = in_array($size_key, $zu_keys);
 			$sizes_to_create[$size_key]['wp'] = in_array($size_key, self::$wp_keys);
 		}
-
 		return $sizes_to_create;
 	}
 
 	private function create_sizes($sizes_to_create) {
-
 		foreach($sizes_to_create as $name => $size) {
 
 			if(empty($size) || !isset($size['width']) || !isset($size['height'])) continue;
@@ -94,10 +97,9 @@ class zu_MediaImageSizes extends zukit_Addon {
 		}
 	}
 
-	private function without_wp_sizes() {
-
+	private function without_wp_sizes($update_wp_sizes = true) {
 		$zu_sizes = self::$zu_sizes;
-		if(!$this->is_plugin_option('full_hd')) unset($zu_sizes['full_hd']);
+		if(!$this->is_parent_option('full_hd')) unset($zu_sizes['full_hd']);
 
 		// change standard WP sizes if required
 		foreach($zu_sizes as $name => $size) {
@@ -108,18 +110,17 @@ class zu_MediaImageSizes extends zukit_Addon {
 				$crop = (bool) $size['crop'];
 
 				if($width != $this->sizes[$name]['width']) {
-					update_option("{$name}_size_w", $width);
+					if($update_wp_sizes) update_option("{$name}_size_w", $width);
 					$this->sizes[$name]['width'] = $width;
 				}
 				if($height != $this->sizes[$name]['height']) {
-					update_option("{$name}_size_h", $height);
+					if($update_wp_sizes) update_option("{$name}_size_h", $height);
 					$this->sizes[$name]['height'] = $height;
 				}
 				if($crop != (bool)$this->sizes[$name]['crop']) {
-					update_option("{$name}_crop", $crop);
+					if($update_wp_sizes) update_option("{$name}_crop", $crop);
 					$this->sizes[$name]['crop'] = $crop;
 				}
-
 				unset($zu_sizes[$name]);
 			}
 		}
@@ -129,11 +130,11 @@ class zu_MediaImageSizes extends zukit_Addon {
 	}
 
 	public function get_all_cached_sizes() {
-		$sizes = $this->call('get_cached', 'sizes');
+		$sizes = $this->call_parent('get_cached', 'sizes');
 		if($sizes !== false) return $sizes;
 
 		$sizes = self::get_all_sizes();
-		$this->call('set_cached', 'sizes', $sizes);
+		$this->call_parent('set_cached', 'sizes', $sizes);
 		return $sizes;
 	}
 

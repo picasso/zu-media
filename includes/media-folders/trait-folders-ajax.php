@@ -9,6 +9,7 @@ trait zu_MediaFolderAjax {
 	private $be_int_params = ['id', 'parent_id', 'receiving_id'];
 	private $be_string_params = ['name', 'operation', 'ids', 'path', 'meta'];
 	private $maybe_null_params = ['value'];
+	private $reset_cached = ['add_folder', 'edit_folder', 'delete_folder', 'move_folder'];
 
 	public function ajax_action() {
 
@@ -49,7 +50,9 @@ trait zu_MediaFolderAjax {
 					$this->ajax_error(__('Unknown Ajax request', 'zu-media'), $params);
 			}
 		}
-
+		// reset the cache for operations that change information about folders
+		// some operations reset the cache themselves as it depends on some conditions
+		if(in_array($params['operation'], $this->reset_cached)) $this->reset_cached_folders();
 		$this->ajax_send($result);
 	}
 
@@ -91,11 +94,6 @@ trait zu_MediaFolderAjax {
 		return false;
 	}
 
-	// Reset cached folders data (called after the folders were modified)
-	private function reset_cached_folders() {
-		$this->call('delete_cached', 'folders');
-	}
-
 	// Add a new folder via Ajax
     private function add_folder() {
 
@@ -113,7 +111,6 @@ trait zu_MediaFolderAjax {
 
         $result = wp_update_term($result['term_id'], $this->folders_category);
         $term = get_term($result['term_id'], $this->folders_category);
-		$this->reset_cached_folders();
 
 		return [
 			'status' 	=> true,
@@ -137,7 +134,6 @@ trait zu_MediaFolderAjax {
 		if(is_wp_error($result)) return $this->ajax_error($result);
 
         $term = get_term($result['term_id'], $this->folders_category);
-		$this->reset_cached_folders();
 
 		return [
 			'status' 	=> true,
@@ -187,7 +183,7 @@ trait zu_MediaFolderAjax {
 		// если фолдер содержит другие фолдеры, то данная опция не влияет (пока)
 		// и удалить фолдер с вложенными фолдерами сейчас невозможно (может изменится в будущем?)
 		if(!$this->is_option('non_empty')) {
-			$folder = $this->get_folder_by_id($term_id);
+			$folder = $this->get_folder($term_id);
 			if(count($folder['images'] ?? [])) {
 				return $this->ajax_error(__('Unable to delete non-empty folder', 'zu-media'));
 	        }
@@ -199,8 +195,6 @@ trait zu_MediaFolderAjax {
 		if($result === false || is_wp_error($result)) {
 			return $this->ajax_error($result === false ? __('Requested folder does not exist', 'zu-media') : $result);
         }
-
-		$this->reset_cached_folders();
 
 		return [
 			'status' 	=> true,
@@ -227,8 +221,6 @@ trait zu_MediaFolderAjax {
 
         $result = wp_update_term($term_id, $this->folders_category, ['parent' => $term_receiving_id]);
 		if(is_wp_error($result)) return $this->ajax_error($result);
-
-		$this->reset_cached_folders();
 
 		return [
 			'status' 			=> true,
@@ -296,8 +288,14 @@ trait zu_MediaFolderAjax {
 		return empty($data) ? ($for_json ? (object) null: []) : $data;
 	}
 
+	// Reset cached folders data (called after the folders were modified)
+	private function reset_cached_folders() {
+		$this->call_parent('delete_cached', 'folders');
+	}
+
 	// Reset cached collections (folders, galleries)
 	private function reset_collections() {
-		do_action('zumedia_reset_collections');
+		$this->call_parent('reset_cached_collections');
+		// do_action('zumedia_reset_collections');
 	}
 }

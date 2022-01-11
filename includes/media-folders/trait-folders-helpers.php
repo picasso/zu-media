@@ -69,7 +69,7 @@ trait zu_MediaFolderHelpers {
 	}
 
 	private function generate_tree($terms, $parent = 0, $depth = 0, $limit = 0) {
-		if($this->check_error($terms)) return [];
+		if($this->is_error($terms)) return [];
 		if($limit > 100) return '';  // Prevent an endless recursion
 		$tree = [];
 		for($i = 0, $ni = count($terms); $i < $ni; $i++) {
@@ -114,22 +114,22 @@ trait zu_MediaFolderHelpers {
 		$folders = array_map(function($folder) { return $folder['id']; }, $this->get_folders());
 
 		// then search and fix orphaned attachments
-        $attachments = $this->call('get_attachments');
+        $attachments = $this->call_parent('get_attachments');
 		$report['attachments'] = count($attachments);
 
         foreach($attachments as $attachment_id) {
 			$item_terms = get_the_terms($attachment_id, $this->folders_category);
 			if($item_terms === false) continue;
-			if($this->check_error($item_terms, true, $report)) return false;
+			if($this->is_error_with_report($item_terms, $report)) return false;
 			foreach($item_terms as $term) {
 				if(in_array($term->term_id, $folders)) continue;
 				if($remove) {
 					$result = wp_delete_attachment($attachment_id);
-					if($this->check_error($result, true, $report)) return false;
+					if($this->is_error_with_report($result, $report)) return false;
 					$report['removed_attachments'] += 1;
 				} else {
 					$result = wp_set_object_terms($attachment_id, 0, $this->folders_category, true);
-					if($this->check_error($result, true, $report)) return false;
+					if($this->is_error_with_report($result, $report)) return false;
 					$report['fixed_attachments'] += 1;
 				}
 			}
@@ -156,7 +156,7 @@ trait zu_MediaFolderHelpers {
 		$this->ajax_error(null);
 		$report = [];
 
-        $attachments = $this->call('get_attachments');
+        $attachments = $this->call_parent('get_attachments');
 
 		foreach($from as $taxonomy) {
 			$report[$taxonomy] = 0;
@@ -165,7 +165,7 @@ trait zu_MediaFolderHelpers {
 			foreach($attachments as $attachment_id) {
 				$item_terms = get_the_terms($attachment_id, $taxonomy);
 				if($item_terms === false) continue;
-				if($this->check_error($item_terms, $ajax, $taxonomy)) return false;
+				if($this->is_error_with_report($item_terms, $taxonomy)) return false;
 				$report[$taxonomy] += 1;
 	        }
 			if($not_registered) $this->unregister_taxonomy($taxonomy);
@@ -207,7 +207,7 @@ trait zu_MediaFolderHelpers {
 		// First create copies of all terms under the new taxonomy
 		foreach($from_terms as $term) {
 			$result = wp_insert_term($term->name, $this->folders_category, ['parent' => $converted[$term->parent]]);
-			if($this->check_error($result, true, $report)) return false;
+			if($this->is_error_with_report($result, $report)) return false;
 			$converted[$term->term_id] = $result['term_id'];
 			$report['converted_terms'] += 1;
 		}
@@ -216,24 +216,24 @@ trait zu_MediaFolderHelpers {
 		foreach($from_terms as $term) {
 			$converted_id = $converted[$term->term_id];
 			$converted_term = get_term($converted_id, $this->folders_category);
-			if($this->check_error($converted_term, true, $report)) return false;
+			if($this->is_error_with_report($converted_term, $report)) return false;
 
 			$slug = $this->snippets('translit', $converted_term->name);
 			$result = wp_update_term($converted[$term->term_id], $this->folders_category, [
 				'slug' => wp_unique_term_slug($slug, $converted_term),
 			]);
-			if($this->check_error($result, true, $report)) return false;
+			if($this->is_error_with_report($result, $report)) return false;
 		}
 
 		// and when all new terms are created and sorted -> update attachments
-		$attachments = $this->call('get_attachments');
+		$attachments = $this->call_parent('get_attachments');
         foreach($attachments as $attachment_id) {
 			$item_terms = get_the_terms($attachment_id, $from_taxonomy);
 			if($item_terms === false) continue;
-			if($this->check_error($item_terms, true, $report)) return false;
+			if($this->is_error_with_report($item_terms, $report)) return false;
 			foreach($item_terms as $term) {
 				$result = wp_set_object_terms($attachment_id, $converted[$term->term_id], $this->folders_category, true);
-				if($this->check_error($result, true, $report)) return false;
+				if($this->is_error_with_report($result, $report)) return false;
 				$report['converted_items'] += 1;
 				if($remove) {
 					wp_delete_object_term_relationships($attachment_id, $from_taxonomy);
@@ -258,5 +258,14 @@ trait zu_MediaFolderHelpers {
 
 		$this->set_option('was_converted', true);
 		return $this->create_notice('success', $message);
+	}
+
+	private function is_error_with_report($error, &$report) {
+		if($this->is_error($error)) {
+			if(isset($report['errors'])) $report['errors'] += 1;
+			$this->ajax_error($error, is_string($report) ? $report : null);
+			return true;
+		}
+		return false;
 	}
 }

@@ -1,6 +1,4 @@
 <?php
-// NOTE: разобраться с mplus_get_location_as_text()
-// раньше это добавлялось вместе с ratio field но логично перенести это сюда (если еще нужно?)
 
 // Location helpers -----------------------------------------------------------]
 
@@ -24,20 +22,22 @@ trait zu_MediaLocation {
 
 	    $args = [
 	        'labels' 				=> $labels,
+			'public'				=> true,
 	        'hierarchical' 			=> true,
-	        'query_var' 			=> 'true',
-	        'rewrite' 				=> 'true',
-	        'show_admin_column' 	=> 'true',
+	        'query_var' 			=> 'location', //'true',
+	        'rewrite' 				=> ['slug' => 'location'], //'true',
+	        'show_admin_column' 	=> true, //'true',
+			'args'					=> ['post_type'	=> 'attachment', 'post_status' => 'inherit'],
 	    ];
 	    register_taxonomy('location', 'attachment', $args);
-
+// flush_rewrite_rules();
 		// add_filter('attachment_fields_to_edit', [$this, 'location_field_edit'], 10, 2);
 	}
 
-	protected function get_location_terms($post_id) {
+	protected function get_location_terms($attachment_id) {
 
 		$locations = [];
-		$terms = wp_get_post_terms($post_id, ['location']);
+		$terms = wp_get_post_terms($attachment_id, ['location']);
 
 		foreach($terms as $term) {
 			// if the term have a parent, set the child term as attribute in parent term
@@ -63,9 +63,9 @@ trait zu_MediaLocation {
 		return $sorted;
 	}
 
-	protected function get_location_names($post_id, $as_array = false, $format = '%s', $with_link = false) {
+	protected function get_location_names($attachment_id, $as_array = false, $format = '%s', $with_link = false) {
 
-		$terms = $this->get_location_terms($post_id);
+		$terms = $this->get_location_terms($attachment_id);
 
 		$locations = [];
 		$names = [];
@@ -88,7 +88,7 @@ trait zu_MediaLocation {
 				foreach($locations as $slug => $location) {
 					$location = sprintf($format, $location);
 					if($with_link) $location = zu_sprintf(
-						'<a href="%2$s" class="zu-location-link">%1$s</a>',
+						'<a href="%2$s" class="location-link">%1$s</a>',
 						$location,
 						get_term_link($slug, 'location')
 					);
@@ -105,7 +105,7 @@ trait zu_MediaLocation {
 					}
 					$location = sprintf($format, $text .'[:]');
 					if($with_link) $location = zu_sprintf(
-						'<a href="%2$s" class="zu-location-link">%1$s</a>',
+						'<a href="%2$s" class="location-link">%1$s</a>',
 						$location,
 						get_term_link($slug, 'location')
 					);
@@ -116,53 +116,46 @@ trait zu_MediaLocation {
 		return $values;
 	}
 
-	protected function get_location_as_html($post_id, $lang = null, $glue = '') {
-
+	public function get_location($attachment_id = null, $as_html = true, $lang = null, $glue = null) {
 		if(empty($lang)) $lang = $this->snippets('get_lang');
-
-		$locations = $this->get_location_names($post_id, false, '<span>%s</span>', true);
+		$glue = !is_null($glue) ? $glue : ($as_html ? '' : ', ');
+		// if as text: $locations = $this->get_location_names($attachment_id, false, '%s', false);
+		$locations = $this->get_location_names($attachment_id, false, $as_html ? '<span>%s</span>' : '%s', $as_html);
 		$locations = implode($glue, $locations);
-		return empty($lang) ? $locations : $this->snippets('convert_lang_text', $locations, $lang);
+		return (empty($lang) || $lang == -1) ? $locations : $this->snippets('convert_lang_text', $locations, $lang);
 	}
 
-	protected function get_location_as_text($post_id, $lang = null, $glue = ', ') {
+	public function get_media_taxonomy_link($term_or_folder, $params = null) {
+		$params = $this->array_with_defaults($params, [
+			'is_attachment'	=> false,
+            'is_folder'		=> false,
+		]);
 
-		if(empty($lang)) $lang = $this->snippets('get_lang');
-
-		$locations = $this->get_location_names($post_id, false, '%s', false);
-		$locations = implode($glue, $locations);
-
-		return (empty($lang) || $lang == -1) ? $locations : $this->snippets('convert_lang_text', $locations, $lang);
+		if($params['is_folder']) return $this->snippets('get_folder_permalink', $term_or_folder);
+		if($term_or_folder instanceof WP_Term) {
+			$url = get_term_link($term_or_folder);
+			if($params['is_attachment'] && is_string($url)) {
+				$tag_rewrite = $this->get_option('tag_rewrite', '');
+				$category_rewrite = $this->get_option('category_rewrite', '');
+				$url = str_replace(
+					['/tag/', '/category/'],
+					["/{$tag_rewrite}/", "/{$category_rewrite}/"],
+					$url
+				);
+			}
+			return is_string($url) ? $url : false;
+		}
+		return false;
 	}
 
 	public function location_field_edit($form_fields, $post) {
 
+		// раньше это добавлялось вместе с ratio field но логично перенести это сюда (если еще нужно?)
 		// $meta_key = $this->field_key();
 		//
-		// $meta_params = [
-		// 	'label'			=> __('Media Ratio', 'zu-media'),
-		// 	'show_in_edit' 	=> true,
-		// 	'show_in_modal' => true,
-		// 	'helps' 		=> '',
-		// 	'input' 		=> 'html',
-		// 	'html' 			=> zu_sprintf(
-		// 		'<input name="attachments[%1$s][%2$s]"
-		// 			metaid="%1$s"
-		// 			id="attachments-%1$s-%2$s"
-		// 			class="mplus_metaid"
-		// 			type="text"
-		// 			value="%3$s" readonly>',
-		// 		$post->ID,
-		// 		$meta_key,
-		// 		$this->get_ratio_name($post->ID)
-		// 	)
-		// ];
-		//
-		// $form_fields[$meta_key] = $meta_params;
-		// keep location values for JS
-		// NOTE: разобраться с mplus_get_location_as_text
+		// NOTE: разобраться с "keep location values for JS"
 		// $form_fields[$meta_key]['html'] .=  sprintf(
-		// '<div class="qtx-location" style="display:none">%1$s</div>', mplus_get_location_as_text($post->ID, -1));
+		// '<div class="qtx-location" style="display:none">%1$s</div>', $this->get_location($post->ID, false, -1));
 
 		// return $form_fields;
 	}

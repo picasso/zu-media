@@ -28,7 +28,7 @@ trait zu_MediaRatio {
 	private function check_ratio($name, $width, $height, $strict_check = false, $and_less = false) {
 		// first we assume that the horizontal ratio '$name' is height to width, that is, like 3:2
 		$value = $this->ratio_names[$name] ?? 0;
-		$ratio = $height / $width;
+		$ratio = $width === 0 || $height === 0 ? 1 : ($height / $width);
 
 		// if $value is 0, then we try the opposite (vertical) ratio, that is, width to height (like 2:3)
 		if($value === 0) {
@@ -129,11 +129,11 @@ trait zu_MediaRatio {
 		$attachment_id = $this->snippets('get_attachment_id', $post_or_attachment_id);
 		$metadata = wp_get_attachment_metadata($attachment_id);
 		if(empty($metadata)) return false;
-		return $this->is_landscape_ratio(absint($metadata['width']), absint($metadata['height']), $limit);
+		return $this->is_landscape_ratio($metadata['width'], $metadata['height'], $limit);
 	}
 
 	public function is_landscape_ratio($width, $height, $limit = '3:2') {
-		return $this->check_ratio($limit, $width, $height, false, true);
+		return $this->check_ratio($limit, absint($width), absint($height), false, true);
 	}
 
 	public function get_all_landscaped() {

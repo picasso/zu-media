@@ -23,10 +23,13 @@ class zu_MediaFolder extends zukit_Addon {
 		return [
 			'name'				=> $this->custom_key,
 			'options'			=> [
+				'add_rewrite'		=> true,
+				'rewrite'			=> 'folder',
 				'selectedId'		=> 0,
 				'non_empty'			=> false,
 				'hide_root'			=> false,
 				'root_icon'			=> true,
+				'inherit_privacy'	=> false,
 				'anim_speed'		=> 200,
 				'anim_easing'		=> 'swing',
 				'color'				=> 'wp',
@@ -50,18 +53,20 @@ class zu_MediaFolder extends zukit_Addon {
 	}
 
 	protected function construct_more() {
-
 		add_action('wp_ajax_folders_action', [$this, 'ajax_action']);
 		add_action('pre_get_posts', [$this, 'pre_get_attachments_with_folders'], 0, 1);
 		add_filter('wp_generate_attachment_metadata', [$this, 'after_upload'], 10, 3);
 
 		add_action('pre_get_posts', [$this, 'tableview_select_folder']);
         add_action('restrict_manage_posts', [$this, 'tableview_category_filter']);
+		// zu_log('plugins_loaded added');
+		// add_action('plugins_loaded', [$this, 'update_cached']);
     }
 
 	public function init() {
 		$this->register_taxonomy();
 		$this->update_cached();
+		$this->add_folder_rewrite();
 	}
 
 	public function admin_init() {
