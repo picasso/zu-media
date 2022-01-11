@@ -7,7 +7,10 @@
 // const EDITABLE = 'POST, PUT, PATCH'
 // const DELETABLE = 'DELETE'
 
-trait zukit_Ajax {
+// for testing REST API
+// https://yoursite.com/wp-json/zukit/v1
+
+trait zukit_AjaxREST {
 
 	private $zukit_api_root = 'zukit';
 	private $zukit_api_version = 1;
@@ -22,14 +25,15 @@ trait zukit_Ajax {
 
 	private static $doing_rest = null;
 	private static $zukit_rest_registered = false;
+	private static $sanitize_helpers = ['sanitize_ids', 'sanitize_keys', 'sanitize_path', 'sanitize_paths', 'floatval'];
 
 	protected function api_routes() {}
 
 	private function ajax_config() {
 
-		$this->nonce = $this->get('api.nonce') ?? $this->prefix.'_ajax_nonce';
-		$this->api_root = $this->get('api.root') ?? $this->prefix;
-		$this->api_version = $this->get('api.version') ?? 1;
+		$this->nonce = $this->get_callable('api.nonce') ?? $this->prefix.'_ajax_nonce';
+		$this->api_root = $this->get_callable('api.root') ?? $this->prefix;
+		$this->api_version = $this->get_callable('api.version') ?? 1;
 
 		$this->zukit_routes = [
 			// make action via ajax call
@@ -179,7 +183,7 @@ trait zukit_Ajax {
 			register_rest_route($namespace, $endpoint, [
   		    	'methods'				=> $params['methods'],
   		    	'callback'				=> [$this, $params['callback']],
-				'args'					=> $params['args'],
+				'args'					=> $this->maybe_fix_sanitize($params['args']),
 				'permission_callback' 	=> function() use($params) {
                     return empty($params['permission']) ? true : current_user_can($params['permission']);
                 },
@@ -189,62 +193,52 @@ trait zukit_Ajax {
 
 	public function api_basics() {
 		return [
-			'router'	=> $this->get_router_name(),
-			'root'		=> $this->api_root,
-			'verion'	=> $this->api_version,
+			'rest'	=> [
+				'router'	=> $this->get_router_name(),
+				'root'		=> $this->api_root,
+				'version'	=> $this->api_version,
+			],
 		];
 	}
 
 	// Sanitize helpers -------------------------------------------------------]
 
 	public function sanitize_ids($ids) {
-		$cleaned_ids = [];
-
-		if(is_numeric($ids)) return [$ids];
-
-		if(is_array($ids)) {
-			foreach($ids as $id) {
-				$cleaned_ids[] = absint($id);
-			}
-		}
-		return $cleaned_ids;
+		if(is_scalar($ids)) $ids = wp_parse_list($ids);
+		return !is_array($ids) ? [] : array_filter(array_unique(array_map('absint', $ids)));
 	}
 
 	public function sanitize_keys($keys) {
-
-		if(is_string($keys)) return [sanitize_key($keys)];
-
-		$cleaned_keys = [];
-		if(is_array($keys)) {
-			foreach($keys as $key) {
-				$cleaned_keys[] = sanitize_key($key);
-			}
-		}
-		return $cleaned_keys;
+		if(is_scalar($keys)) $keys = wp_parse_list($keys);
+		return !is_array($keys) ? [] : array_filter(array_unique(array_map('sanitize_key', $keys)));
 	}
 
-	// Lowercase alphanumeric characters, dot and underscores are allowed.
+	// lowercase keys 'maybe' separated with dots.
 	public function sanitize_path($path) {
 	    $path = strtolower($path);
-	    $path = preg_replace('/[^a-z0-9_.]/', '', $path);
-    	return $path;
+		$path = array_filter(array_map('sanitize_key', explode('.', $path)));
+		return implode('.', $path);
 	}
 
 	public function sanitize_paths($paths) {
-
-		if(is_string($paths)) return [$this->sanitize_path($paths)];
-
-		$cleaned_paths = [];
-		if(is_array($paths)) {
-			foreach($paths as $path) {
-				$cleaned_paths[] = $this->sanitize_path($path);
-			}
-		}
-		return $cleaned_paths;
+		if(is_scalar($paths)) $paths = wp_parse_list($paths);
+		return !is_array($paths) ? [] : array_filter(array_unique(array_map([$this, 'sanitize_path'], $paths)));
 	}
 
 	public function floatval($value) {
 		return filter_var($value, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+	}
+
+	private function maybe_fix_sanitize($args) {
+		foreach($args as $key => $value) {
+			if($value['sanitize_callback'] ?? false) {
+				$callback = $value['sanitize_callback'];
+				if(is_string($callback) && in_array($callback, self::$sanitize_helpers)) {
+					$args[$key]['sanitize_callback'] = [$this, $callback];
+				}
+			}
+		}
+		return $args;
 	}
 
 	// Basics -----------------------------------------------------------------]
@@ -289,9 +283,14 @@ trait zukit_Ajax {
 	public function ajax_reset_options() {
 		$options = $this->reset_options();
 		return $this->create_notice('infodata', // combine 'info' with 'data'
-			sprintf( 'Plugin "**%1$s**" settings are reset to defaults', $this->data['Name']),
+			sprintf('Plugin "**%1$s**" settings are reset to defaults', $this->data['Name']),
 			$options
 		);
+	}
+
+	public function ajax_default_options() {
+		$options = $this->initial_options();
+		return $this->create_notice('data', null, $options);
 	}
 
 	public function ajax_more($action, $value) { return null; }
@@ -320,6 +319,10 @@ trait zukit_Ajax {
 					$result = $router->ajax_reset_options();
 					break;
 
+				case 'default_options':
+					$result = $router->ajax_default_options();
+					break;
+
 				// default debug actions
 				case 'clear_log':
 					$result = $router->debug_empty_log();
@@ -336,9 +339,11 @@ trait zukit_Ajax {
 		}
 
 		// if $result is empty - something went wrong - then return empty object
-		if(empty($result)) return rest_ensure_response($this->ajax_error !== false ? $this->ajax_error : (object) null);
+		if(empty($result)) return $this->rest_response($this->ajax_error, $this->ajax_error === false);
+		// rest_ensure_response($this->ajax_error !== false ? $this->ajax_error : (object) null);
 
-		return rest_ensure_response($result);
+		return $this->rest_response($result);
+		// return rest_ensure_response($result);
 	}
 
 	public function get_option_ajax($request) {
@@ -351,7 +356,8 @@ trait zukit_Ajax {
 		$value = is_null($router) ? null : $router->get_option($key, null);
 
 		// if $result is null - something went wrong - then return null
-		return rest_ensure_response($value === null ? (object) null : $value);
+		return $this->rest_response($value, is_null($value));
+		// return rest_ensure_response($value === null ? (object) null : $value);
 	}
 
 	public function set_options_ajax($request) {
@@ -367,17 +373,19 @@ trait zukit_Ajax {
 		$result = is_null($router) ? false : true;
 
 		if($result) {
+			$result = false;
 			foreach($keys as $key) {
 				// if value for 'key' is 'null' then call 'del_option' instead of 'set_option'
 				if(array_key_exists($key, $values) && $values[$key] === null) $return = $router->del_option($key);
 				// with set_option 'null' will be ignored, 'false' considered as failure
-				else $return = $router->set_option($key, $values[$key] ?? null);
-
-				if($return === false) $result = false;
+				else $return = $router->set_option($key, $values[$key] ?? null, true);
+				// if at least one call returns 'true', then the overall result will also be 'true'
+				$result = $result || $return;
 			}
 		}
 		// if $result is false - something went wrong - then return null
-		return rest_ensure_response($result ?? (object) null);
+		return $this->rest_response($result, $result === false);
+		// return rest_ensure_response($result ?? (object) null);
 	}
 
 	protected function extend_zudata($key, $params) {}
@@ -421,22 +429,18 @@ trait zukit_Ajax {
 				]);
 				break;
 
-			// process 'zudata' from all loaded plugins/theme
+			// process 'zudata' from all loaded plugins/themes
 			default:
-				if($request_router !== null) {
-					$result = $request_router->extend_zudata($key, $params) ?? null;
-				} else {
-					foreach($this->instance_by_router() as $plugin_router) {
-						$result = $plugin_router->extend_zudata($key, $params) ?? null;
-						if(!empty($result)) break;
-					}
+				foreach($this->instance_by_router() as $plugin_router) {
+					$result = $plugin_router->extend_zudata($key, $params) ?? null;
+					if(!empty($result)) break;
 				}
 		}
 
 		// if $result is empty - something went wrong - then return empty object
-		return rest_ensure_response(empty($result) ? (object) null :  $result);
+		return $this->rest_response($result, empty($result));
+		// return rest_ensure_response(empty($result) ? (object) null : $result);
 	}
-
 
 	// Custom Data Routes which could be extended -----------------------------]
 
@@ -479,7 +483,21 @@ trait zukit_Ajax {
 		return rest_ensure_response(is_null($result) ? (object) null : $result !== false);
 	}
 
-	// Ajax Actions Helpers ---------------------------------------------------]
+	// REST & Ajax Helpers ----------------------------------------------------]
+
+	protected function rest_response($response, $if_failed = false, $params = null) {
+
+		$params = $this->array_with_defaults($params, [
+			'as_object'	=> true,
+			'as_array'	=> false,
+		]);
+		extract($params, EXTR_OVERWRITE);
+
+		if($if_failed) {
+			return rest_ensure_response($as_object ? (object) null : ($as_array ? [] : null));
+		}
+		return rest_ensure_response($as_object ? (object) $response : ($as_array ? (array) $response : $response));
+	}
 
 	private function reset_ajax_error() {
 		$this->ajax_error = false;

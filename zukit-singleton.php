@@ -9,6 +9,9 @@ class zukit_Singleton {
     public $version;
     public $debug;
 
+    // To indicate to child classes that __construct is complete
+    protected $created = false;
+
     // The zukit_Singleton's instance is stored in a static property. This property is an
     // array, because we'll allow our zukit_Singleton to have subclasses. Each item in
     // this array will be an instance of a specific zukit_Singleton's subclass.
@@ -26,9 +29,10 @@ class zukit_Singleton {
         $this->version = $theme->get('Version');
         $this->debug = false;
 
-        if(method_exists($this, 'config_singleton_scripts')) $this->config_singleton_scripts();
-        $this->config_singleton($params);
+        if(method_exists($this, 'singleton_config_scripts')) $this->singleton_config_scripts();
+        $this->singleton_config($params);
         $this->construct_more();
+        $this->created = true;
     }
 
     // singleton should not be cloneable.
@@ -56,7 +60,7 @@ class zukit_Singleton {
         return self::$instances[$calledClass];
     }
 
-    protected function config_singleton($params) {}
+    protected function singleton_config($params) {}
     protected function construct_more() {}
 }
 

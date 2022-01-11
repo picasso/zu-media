@@ -8,6 +8,10 @@ class zukit_Addon {
 	protected $name;
 	protected $options;
 	protected $options_key;
+	protected $dir;
+    protected $uri;
+	protected $version;
+
 	private $nonce;
 
 	public function register($plugin) {
@@ -16,12 +20,17 @@ class zukit_Addon {
 		if(empty($this->plugin)) {
 			_doing_it_wrong(__FUNCTION__, '"Addon" cannot be used without plugin!');
 		} else {
+			$this->dir = $this->plugin->dir;
+			$this->uri = $this->plugin->uri;
+			$this->version = $this->plugin->version;
+
 			$this->config = array_merge($this->config_defaults(), $this->config());
 			$this->name = $this->get('name') ?? 'zuaddon';
-			$this->nonce = $this->get('nonce') ?? $this->name.'_ajax_nonce';
+			$this->nonce = $this->get_callable('nonce') ?? $this->name.'_ajax_nonce';
 
 			$this->options_key = $this->name.'_options';
 			$this->init_options();
+			$this->construct_more_inner();
 			$this->construct_more();
 		}
 	}
@@ -33,6 +42,9 @@ class zukit_Addon {
 
 	// 'construct_more' is only called after the add-on is registered by the plugin!
 	protected function construct_more() {}
+	// 'construct_more_inner' is needed for classes that will inherit from 'zukit_Addon'
+	// but to keep 'construct_more' free for users of the framework
+	protected function construct_more_inner() {}
 
 	public function init() {}
 	public function admin_init() {}
@@ -54,12 +66,18 @@ class zukit_Addon {
 		}
 	}
 
+	public function extend_parent_options($parent_options) {
+		$options = $this->get('options');
+		$parent_options[$this->options_key] = $options;
+		return $parent_options;
+	}
+
 	public function options($options = null) {
 		if(!is_null($options)) $this->options = $options[$this->options_key] ?? [];
 		return $this->options;
 	}
 
-	protected function get_option($key, $default = '') {
+	protected function get_option($key, $default = null) {
 		return $this->plugin->get_option($key, $default, $this->options);
 	}
 
@@ -77,20 +95,57 @@ class zukit_Addon {
 		return $this->plugin->set_option($this->options_key, $this->options, true);
 	}
 
-	protected function is_plugin_option($key, $check_value = true) {
+	protected function is_parent_option($key, $check_value = true) {
 		return $this->plugin->is_option($key, $check_value);
 	}
 
-	// Redirect to plugin methods ---------------------------------------------]
+	protected function get_parent_option($key, $default = null) {
+		return $this->plugin->get_option($key, $default);
+	}
 
-	protected function sprintf_dir(...$params) {
-		return call_user_func_array([$this->plugin, 'sprintf_dir'], $params);
+	// Redirect to parent methods ---------------------------------------------]
+
+	protected function extend_parent_redirects() {}
+
+	public function __call($method, $args) {
+		$available_methods = [
+			'ajax_error',
+			'ajax_nonce',
+			'ajax_send',
+			'array_with_defaults',
+			'create_notice',
+			'do_with_instances',
+			'ends_with_slug',
+			'enqueue_only',
+			'get_file_version',
+			'has_snippet',
+			'is_error',
+			'logd',
+			'prefix_it',
+			'register_only',
+			'snippets',
+			'_snippets',
+			'sprintf_dir',
+			'sprintf_uri',
+		];
+		if(!in_array($method, array_merge($available_methods, $this->extend_parent_redirects() ?? []))) {
+			// if we have 'zukit_Exchange' trait - then transfer processing further
+			if(method_exists($this, 'call_addon_provider')) {
+				return $this->call_addon_provider($method, $args);
+			}
+			$this->logc('?Trying to call an unavailable parent method', [
+				'method'		=> $method,
+				'args'			=> $args,
+				'available'		=> $available_methods,
+			]);
+			return null;
+		}
+		$func = [$this->plugin, $method];
+		return is_callable($func) ? call_user_func_array($func, $args) : null;
 	}
-	protected function sprintf_uri(...$params) {
-		return call_user_func_array([$this->plugin, 'sprintf_uri'], $params);
-	}
+
 	protected function enqueue_style($file, $params = []) {
-		// $is_style, $is_frontend, $params
+		// enforce_defaults: $is_style, $is_frontend, $params
 		$params_with_defaults = $this->plugin->enforce_defaults(true, true, $params);
 		return $this->plugin->enqueue_style($this->filename($file, $params), $params_with_defaults);
 	}
@@ -106,24 +161,7 @@ class zukit_Addon {
 		$params_with_defaults = $this->plugin->enforce_defaults(false, false, $params);
 		return $this->plugin->admin_enqueue_script($this->filename($file, $params), $params_with_defaults);
 	}
-	protected function ends_with_slug($hook, $slug = null) {
-		return $this->plugin->ends_with_slug($hook, $slug);
-	}
-	protected function ajax_error($error, $params = null) {
-		return $this->plugin->ajax_error($error, $params);
-	}
-	protected function check_error($error, $ajax = false, &$report = null) {
-		return $this->plugin->check_error($error, $ajax, $report);
-	}
-	protected function ajax_nonce($create = false) {
-		return $this->plugin->ajax_nonce($create, $this->nonce);
-	}
-	protected function ajax_send($result) {
-		return $this->plugin->ajax_send($result);
-	}
-	protected function create_notice($status, $message, $actions = []) {
-		return $this->plugin->create_notice($status, $message, $actions);
-	}
+	// we need an additional backtrace shift to compensate for the nested call
 	protected function log(...$params) {
 		$this->plugin->debug_line_shift(1);
         $this->plugin->log(...$params);
@@ -134,32 +172,31 @@ class zukit_Addon {
 		$this->plugin->logc($context, ...$params);
 		$this->plugin->debug_line_shift(0);
 	}
-	protected function logd(...$params) {
-		$this->plugin->logd(...$params);
+
+	// Common interface to parent methods with availability check -------------]
+
+	// NOTE: only public functions and property can be called with this helper
+	protected function with_another($prop, $func, ...$params) {
+		if(property_exists($this->plugin, $prop)) {
+			$another = $this->plugin->{$prop};
+			if(method_exists($another, $func)) return call_user_func_array([$another, $func], $params);
+		}
+		return null;
 	}
 
-	// Common interface to plugin methods with availability check -------------]
-	// NOTE: only public functions can be called with this helper
-
-	protected function call($func, ...$params) {
+	protected function call_parent($func, ...$params) {
 		if(method_exists($this->plugin, $func)) return call_user_func_array([$this->plugin, $func], $params);
 		else return null;
 	}
 
-	protected function snippets(...$params) {
-		return call_user_func_array([$this->plugin, 'snippets'], $params);
-	}
-
 	// Helpers ----------------------------------------------------------------]
-
-	protected function prefix_it($str, $divider = '-') {
-		// if $str starts with '!' then do not prefix it (could be an absolute path)
-		if(substr($str, 0, 1) === '!') return $str;
-		return $this->plugin->prefix_it($str, $divider);
-	}
 
 	protected function get($key, $from_plugin = false, $default_value = null) {
 		return $this->plugin->get($key, $default_value, $from_plugin ? null : $this->config);
+	}
+
+	protected function get_callable($key, $from_plugin = false, $default_value = null) {
+		return $this->plugin->get_callable($key, $default_value, $from_plugin ? null : $this->config);
 	}
 
 	private function filename($file, $params) {

@@ -3,8 +3,6 @@ trait zukit_BlockAttributes {
 
 	protected function block_attributes() {
 
-		return null;
-
 		// Examples -----------------------------------------------------------]
 
 		// return [
@@ -34,20 +32,22 @@ trait zukit_BlockAttributes {
 		// ];
 	}
 
+	// NOTE: смысл функции уже непонятен... видимо осталось с момента создания и потом структура данных изменилась...
+	// удалить после проверок
 	protected function shortcode_func($name) {
 		$blocks = array_values(array_filter($this->attributes, function ($item) use ($name) { return ($item['name'] == $name); }));
 		return empty($blocks) ? '' : $blocks[0]['shortcode'];
 	}
 
-	protected function render_func($name) {
+	// NOTE: функция как бы не нужна... зачем создавать лишний коллбэк?
+	protected function render_func($block) {
+		$func_name = $block['render_callback'] ?? $block['shortcode'] ?? null;
 
-		$func_name = $this->shortcode_func($name);
-
+		// $this->shortcode_func($name);
 		if(!is_callable($func_name)) return null;
 
 		$render_func = function($atts, $context) use($func_name) {
-
-			$is_edit = isset($_GET['action']) && $_GET['action'] == 'edit' ? true : false;
+			$is_edit = isset($_GET['action']) && $_GET['action'] === 'edit';
 			// _dbug($atts, $context, $is_edit);
 			// _dbug($_GET);
 
@@ -73,21 +73,19 @@ trait zukit_BlockAttributes {
 	}
 
 	protected function register_blocks_with_attributes() {
-
 		// Get all block attributes
 		$this->attributes = $this->block_attributes() ?? [];
 
 		if(empty($this->attributes)) return;
 
 		foreach($this->attributes as $block) {
-
-			$name = isset($block['name']) ? $block['name'] : '';
+			$name = $block['name'] ?? null;
 			if(empty($name)) continue;
 
 			$args = [];
-			$args['attributes'] = isset($block['attributes']) ? $block['attributes'] : [];
+			$args['attributes'] = $block['attributes'] ?: [];
 
-			$render_func = $this->render_func($name);
+			$render_func = $this->render_func($block);
 			if(!empty($render_func)) $args['render_callback'] = $render_func;
 
 			if(empty($args['attributes']) && !isset($block['render_callback'])) continue;

@@ -19,10 +19,12 @@ class zukit_Blocks extends zukit_Addon {
 	// We can only have one 'zukit-blocks' script loaded and therefore
     // store its status in a static property so that we can avoid repeated 'enqueue' calls.
     private static $zukit_loaded = false;
-
+	// handler for Zukit common JS with utilities and components
 	private static $zukit_handle = 'zukit-blocks';
-
+	// filename with common colors that could be available in JS
 	private static $colors_filename = 'zukit-colors';
+	private static $zukit_colors = null;
+	private static $basic_colors = ['red', 'orange', 'yellow', 'green', 'lime', 'blue', 'blue-sky', 'violet', 'brown', 'grey'];
 
 	// Add functions for blocks with attributes
 	use zukit_BlockAttributes;
@@ -30,10 +32,13 @@ class zukit_Blocks extends zukit_Addon {
 	// Add meta keys for blocks
 	use zukit_BlockMeta;
 
-	protected function construct_more() {
+	protected function construct_more_inner() {
+		// if the class config contains the 'blocks' key (which can only happen
+		// if the class was inherited from 'zukit_Blocks') then merge this data with the default data
+		$this->config = array_replace_recursive(['blocks' => $this->get('blocks', true)], $this->config());
 		$this->blocks_available = function_exists('register_block_type');
-		$this->handle = $this->get('blocks.handle', true) ?? $this->prefix_it('blocks');
-		$this->namespace = $this->get('blocks.namespace', true) ?? $this->get('prefix', true);
+		$this->handle = $this->get_callable('blocks.handle') ?? $this->prefix_it('blocks');
+		$this->namespace = $this->get('blocks.namespace') ?? $this->get('prefix', true);
 		if($this->blocks_available) {
 			// add_action('init', [$this, 'register_blocks'], 99);
 			add_action('enqueue_block_editor_assets', [$this, 'editor_assets']);
@@ -65,7 +70,7 @@ class zukit_Blocks extends zukit_Addon {
 	}
 
 	protected function is_blocks_config($key) {
-		$value = $this->get('blocks.'.$key, true);
+		$value = $this->get('blocks.'.$key);
 		return $value === true;
 	}
 
@@ -80,13 +85,10 @@ class zukit_Blocks extends zukit_Addon {
 	}
 
 	public function init() {
-		if($this->blocks_available) {
-			$this->register_blocks();
-		}
+		$this->register_blocks();
 	}
 
 	public function register_blocks() {
-
 		// return early if not available
 		if(!$this->blocks_available) return;
 
@@ -115,37 +117,42 @@ class zukit_Blocks extends zukit_Addon {
 
 	// Scripts & Styles management --------------------------------------------]
 
-	private function script_defaults() {
-		return [
+	private function script_defaults($kind = null, $key = null) {
+		$defaults = [
 			// front-end script & style
 			'script'	=> [
 				'add_prefix'	=> false,
-				'deps'			=> ['wp-edit-post'],
+				'deps'			=> ['wp-block-library', 'wp-editor', 'wp-plugins'], // ['wp-edit-post'],
+				// данные депенденси выпали при замене, но нужны ли они были вообще?
+				// media-models,
+				// media-views,
+				// postbox,
 				'data'			=> [$this, 'jsdata_defaults'],
 				'handle'		=> $this->handle,
 			],
 			'style'		=> [
 				'add_prefix'	=> false,
-				'deps'			=> ['wp-edit-post'],
+				'deps'			=> ['wp-edit-blocks', 'wp-block-editor', 'wp-nux'],
 				'handle'		=> $this->handle,
 			],
 		];
+		return $kind && $key ? ($defaults[$kind][$key] ?? null) : $defaults;
 	}
 
 	private function jsdata_defaults() {
 		return array_merge([
 			'jsdata_name'	=> $this->prefix_it('blocks_data', '_'),
-		], $this->plugin->api_basics());
+		], $this->plugin->api_basics(), $this->get_colors());
 	}
 
 	protected function js_params($defaults = null) {
-		$params = $this->plugin->get(is_null($defaults) ? 'blocks.script' : 'script', [], $defaults);
+		$params = is_null($defaults) ? $this->get('blocks.script', []) : $this->plugin->get('script', [], $defaults);
 		$params['data'] = is_callable($params['data'] ?? null) ? call_user_func($params['data'], false) : $params['data'] ?? null;
 		return $params;
 	}
 
 	protected function css_params($defaults = null) {
-		return $this->plugin->get(is_null($defaults) ? 'blocks.style' : 'style', [], $defaults);
+		return is_null($defaults) ? $this->get('blocks.style', []) : $this->plugin->get('style', [], $defaults);
 	}
 
 	// 'editor_assets' will be called only in the WordPress Block Editor (Gutenberg)
@@ -162,8 +169,8 @@ class zukit_Blocks extends zukit_Addon {
 	public function block_assets() {
 		if(is_admin()) {
 			$this->plugin->force_frontend_enqueue(
-				$this->get('blocks.load_frontend_css', true),
-				$this->get('blocks.load_frontend_js', true)
+				$this->get('blocks.load_frontend_css'),
+				$this->get('blocks.load_frontend_js')
 			);
 			$this->plugin->blocks_enqueue_more(false, null, null);
 		}
@@ -186,29 +193,22 @@ class zukit_Blocks extends zukit_Addon {
 
 	private function enqueue_zukit_blocks() {
 		if(self::$zukit_loaded === false && $this->is_blocks_config('load_zukit')) {
-			// dependencies for Zukit Blocks script & styles
-			$js_deps = ['wp-edit-post'];
-			// 	'wp-blocks',
-			// 	'wp-i18n',
-			// 	'wp-element',
-			// 	'wp-plugins',
-			// 	'wp-components',
-			// 	'wp-edit-post'
-
-			$css_deps = ['wp-edit-post'];
 			// params for 'zukit-blocks' script
 			$zukit_params = [
 				'absolute'		=> true,
 				'add_prefix'	=> false,
 				'data'			=> [
 					'jsdata_name'	=> 'zukit_jsdata',
-					'colors'		=> $this->get_colors(),
+					'colors'		=> $this->get_colors(true),
 				],
-				'deps'			=> $js_deps,
+				'deps'			=> $this->script_defaults('script', 'deps'),
 				'handle'		=> self::$zukit_handle,
 			];
 			$this->admin_enqueue_script(self::$zukit_handle, $zukit_params);
-			$this->admin_enqueue_style(self::$zukit_handle, array_merge($zukit_params, ['deps' => $css_deps, 'data' => null]));
+			$this->admin_enqueue_style(self::$zukit_handle, array_merge($zukit_params, [
+				'deps' => $this->script_defaults('style', 'deps'),
+				'data' => null
+			]));
 			// Parameters: [$handle, $domain, $path]. WordPress will check for a file in that path
 			// with the format ${domain}-${locale}-${handle}.json as the source of translations
         	wp_set_script_translations('zukit', 'zukit', $this->plugin->zukit_dirname('lang'));
@@ -281,7 +281,7 @@ class zukit_Blocks extends zukit_Addon {
 	// create a list of _full_ block names
 	private function get_blocks() {
 		if($this->block_names === null) {
-			$blocks = $this->get('blocks.blocks', true);
+			$blocks = $this->get_callable('blocks.blocks');
 			$this->block_names = [];
 			foreach((is_array($blocks) ? $blocks : [$blocks]) as $block) {
 				$this->block_names[] = $this->full_name($block);
@@ -293,7 +293,7 @@ class zukit_Blocks extends zukit_Addon {
 	// create a list of _full_ block names available on the front-end
 	private function get_frontend_blocks() {
 		if($this->frontend_names === null) {
-			$frontend_blocks = $this->get('blocks.frontend_blocks', true) ?? $this->get_blocks();
+			$frontend_blocks = $this->get('blocks.frontend_blocks') ?? $this->get_blocks();
 			$this->frontend_names = [];
 			foreach((is_array($frontend_blocks) ? $frontend_blocks : [$frontend_blocks]) as $block) {
 				$this->frontend_names[] = $this->full_name($block);
@@ -302,29 +302,58 @@ class zukit_Blocks extends zukit_Addon {
 		return $this->frontend_names;
 	}
 
-	private function get_colors() {
-		$colors = [];
-		$filepath = $this->plugin->get_zukit_filepath(true, self::$colors_filename, false);
-		if(file_exists($filepath)) {
-			$content = file_get_contents($filepath);
-			if($content === false) return $colors;
-			foreach(explode('}', $content) as $line) {
-				if(empty(trim($line))) continue;
-				$name = preg_match('/.js_([^\{]+)/', $line, $matches) ? $matches[1] : 'error';
-				$color = preg_match('/color\:(.+)/', $line, $matches) ? $matches[1] : 'red';
-				$short_name = str_replace('_color', '', $name);
-				if(array_key_exists($short_name, $colors)) {
-					$this->logc('Duplicate name when creating Zukit Colors!', [
-						'line'			=> $line,
-		                'name'			=> $name,
-		                'color'			=> $color,
-		                'short_name'	=> $short_name,
-						'colors'		=> $colors,
-		            ]);
-				}
-				$colors[$short_name] = $color;
-			}
+	// used to modify the default Zukit color palette
+	// the 'filter' key if presented - contains the names of the colors that need to be left in the palette
+	// key 'colors' if presented - contains descriptions of colors that need to be added to the palette
+	protected function extend_block_colors() {}
+
+	protected function get_colors($framework_only = false) {
+		$colors = $this->get_zukit_colors();
+		$params = $this->array_with_defaults($this->extend_block_colors() ?? [], [
+			'colors'	=> [],
+			'filter'	=> $framework_only ? self::$basic_colors : null,
+		], true, false);
+		extract($params, EXTR_PREFIX_ALL, 'custom');
+		if(empty($custom_filter) && empty($custom_colors)) return [];
+
+		// if color is just an alias on an already existing color - just make a substitution
+		foreach($custom_colors as $name => $color) {
+			$colors[$name] = $colors[$color] ?? $color;
 		}
-		return $colors;
+		$colors = $this->snippets('array_pick_keys', $colors, $custom_filter ?? array_keys($custom_colors));
+		return $framework_only ? $colors : ['colors' => $colors];
+	}
+
+	private function get_zukit_colors() {
+		if(is_null(self::$zukit_colors)) {
+			$colors = [];
+			$filepath = $this->plugin->get_zukit_filepath(true, self::$colors_filename, false);
+			if(file_exists($filepath)) {
+				$content = file_get_contents($filepath);
+				if($content === false) return $colors;
+				foreach(explode('}', $content) as $line) {
+					if(empty(trim($line))) continue;
+					$name = preg_match('/.js_([^\{]+)/', $line, $matches) ? $matches[1] : 'error';
+					$color = preg_match('/color\:(.+)/', $line, $matches) ? $matches[1] : 'red';
+					$short_name = str_replace(['_color', '_'], ['', '-'], $name);
+					if(array_key_exists($short_name, $colors)) {
+						$this->logc('Duplicate name when creating Zukit Colors!', [
+							'line'			=> $line,
+			                'name'			=> $name,
+			                'color'			=> $color,
+			                'short_name'	=> $short_name,
+							'colors'		=> $colors,
+			            ]);
+					}
+					$colors[$short_name] = $color;
+				}
+			}
+			// if(!empty($colors)) {
+			// 	$results = array_filter($this->do_with_instances('get_block_colors', [$colors], true) ?? []);
+			// 	$colors = array_merge($colors, count($results) > 0 ? array_merge([], ...$results) : []);
+			// }
+			self::$zukit_colors = $colors;
+		}
+		return self::$zukit_colors;
 	}
 }

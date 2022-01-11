@@ -3,20 +3,6 @@ trait zusnippets_Useful {
 
 	// Useful functions -------------------------------------------------------]
 
-	public function array_prefix($array, $prefix, $use_keys = false) {
-		return array_map(
-				function($v) use($prefix) { return $prefix.$v; },
-				$use_keys ? array_keys($array) : $array
-		);
-	}
-
-	public function array_prefix_keys($array, $prefix) {
-		return array_combine(
-			$this->array_prefix($array, $prefix, true),
-			$array
-		);
-	}
-
 	public function format_bytes($bytes, $precision = 0, $approximately_sign = false, $template = null) {
 	    $units = array('Bytes', 'KB', 'MB', 'GB', 'TB');
 		$sign = $approximately_sign && $bytes !== 0 ? '~' : '';
@@ -64,10 +50,10 @@ trait zusnippets_Useful {
 		}
 
 		if($strip_xml) {
-			$svg = preg_replace('/.+<svg/ims', '<svg', $svg);
-			$svg = preg_replace('/<svg[^>]+viewBox="([^\"]+)[^>]*/ims', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="$1"', $svg);
+			$svg = preg_replace('/\n/m', '', $svg);
+			$svg = preg_replace('/^.*?<svg/i', '<svg', $svg);
+			$svg = preg_replace('/^<svg[^>]+viewBox="([^\"]+)[^>]*/', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="$1"', $svg);
 		}
-
 		return $this->remove_space_between_tags($svg);
 	}
 
@@ -87,8 +73,8 @@ trait zusnippets_Useful {
 		return filter_var($test_url, FILTER_VALIDATE_URL) !== false;
 	}
 
-	public function to_bool($value) {
-		return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+	public function to_bool($value, $null_on_failure = false) {
+		return filter_var($value, FILTER_VALIDATE_BOOLEAN, $null_on_failure ? FILTER_NULL_ON_FAILURE : null);
 	}
 
 	public function to_float($value) {
@@ -106,7 +92,6 @@ trait zusnippets_Useful {
 		        )
 		    )
 		);
-
 		return $intval === false ? $min : $intval;
 	}
 
@@ -128,8 +113,18 @@ trait zusnippets_Useful {
 		return $values;
 	}
 
-	public function shortcode_atts_with_cast($atts, $pairs, $types, $shortcode = '') {
-		return shortcode_atts($pairs, $this->cast($atts, $types), $shortcode);
+	// if keys are given that need to be converted to the boolean type
+	public function cast_bool($values, $keys) {
+		if(!empty($keys)) {
+			if(is_string($keys)) $keys = [$keys];
+			return $this->cast($values, array_fill_keys($keys, 'bool'));
+		}
+		return $values;
+	}
+
+	public function shortcode_atts_with_cast($pairs, $atts, $types, $shortcode = '') {
+		$fixed_atts = $this->is_assoc_array($types) ? $this->cast($atts, $types) : $this->cast_bool($atts, $types);
+		return shortcode_atts($pairs, $fixed_atts, $shortcode);
 	}
 
 	public function blank_data_uri_img() {

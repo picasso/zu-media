@@ -6,6 +6,7 @@ trait zukit_Debug {
 
 	private static $debug_prefix = '_debug';
 	private static $log_shift = 0;
+	private $debug_mode = true;
 
 	private function debug_def_options() {
 		return [
@@ -82,19 +83,21 @@ trait zukit_Debug {
 
 	// overriding the 'log', 'logc' and 'logfile_clear' methods from the Zu+ plugin, if available
 	public function log(...$params) {
-
-		if(function_exists('zuplus')) zuplus()->dlog($params, static::class);
+		if($this->can_override()) zuplus()->dlog($params, static::class);
         else parent::log_with(self::$log_shift, null, ...$params);
     }
 
 	public function logc($context, ...$params) {
-		$this->logd('params', $params);
-		if(function_exists('zuplus')) zuplus()->dlogc($context, $params, static::class);
+		if($this->can_override()) zuplus()->dlogc($context, $params, static::class);
         else parent::log_with(self::$log_shift, $context, ...$params);
     }
 
 	protected function logfile_clean() {
-		return function_exists('zuplus') ? zuplus()->dlog_clean() : parent::logfile_clean();
+		return $this->can_override() ? zuplus()->dlog_clean() : parent::logfile_clean();
+	}
+
+	private function can_override() {
+		return $this->created && function_exists('zuplus');
 	}
 
 	// Debug Ajax Actions -----------------------------------------------------]
@@ -134,8 +137,10 @@ if(!function_exists('zu_logc')) {
 if(!function_exists('zu_log_if')) {
     function zu_log_if($condition, ...$params) {
 		if($condition) {
-			if(function_exists('zuplus')) zuplus()->dlog($params);
-	        else if(function_exists('zu_snippets')) zu_snippets()->log_with(0, null, ...$params);
+			if(function_exists('zuplus')) {
+				array_unshift($params, '!condition hit!');
+				zuplus()->dlog($params);
+			} else if(function_exists('zu_snippets')) zu_snippets()->log_with(0, null, ...$params);
 		}
     }
 }

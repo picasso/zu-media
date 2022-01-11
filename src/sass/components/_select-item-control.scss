@@ -2,6 +2,7 @@
 
 $select-item-digits-height: 60px;
 $select-item-wrapper-padding: 5px;
+$select-item-null-stripe-size: 5px;
 $select-item-hover-color: $brand-color;
 $select-item-bg-hover-color: rgba($brand-color, 0.08);
 $select-item-border-hover-color: rgba($brand-color, 0.4);
@@ -58,8 +59,10 @@ $select-item-basic-border-color: rgb(25, 30, 35);
 					border-color: $select-item-selected-border-color;
 					color: $select-item-selected-color;
 				}
+				.is-null {
+					opacity: 0.5;
+				}
 			}
-
 		}
 
 		// &.is-selected {
@@ -86,6 +89,12 @@ $select-item-basic-border-color: rgb(25, 30, 35);
 				background-color: transparent;
 				border-color: rgba($wp-gray-200, 0.4);
 				color: transparent;
+            }
+        }
+		&.is-null {
+            .components-button {
+				width: 100%;
+				height: 100%;
             }
         }
 
@@ -147,6 +156,9 @@ $select-item-basic-border-color: rgb(25, 30, 35);
 			background-color: $select-item-bg-hover-color !important;
 			border-color: $select-item-border-hover-color !important;
 		}
+		&.is-clickable {
+			pointer-events: all;
+		}
 
         // @include in('^.is-disabled') {
         //     border-color: $admin-disable-border-color;
@@ -157,6 +169,20 @@ $select-item-basic-border-color: rgb(25, 30, 35);
         svg {
             fill: currentColor;
         }
+
+		.is-null {
+			width: 100%;
+			height: 100%;
+			border-radius: 3px !important;
+			opacity: 0.1;
+			background: repeating-linear-gradient(
+			  45deg,
+			  currentColor,
+			  currentColor $select-item-null-stripe-size,
+			  rgba(black, 0.05) $select-item-null-stripe-size,
+			  rgba(black, 0.05) twice($select-item-null-stripe-size)
+			);
+		}
 
 		.__wrapper {
 			line-height: 0;

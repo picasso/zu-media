@@ -88,6 +88,21 @@ const ZukitSkeleton = ({
 	// create getter and setter for 'panels'
 	const [getPanel, setPanel, PanelsContext] = usePanels(initialPanels, createNotice);
 
+	// function that allows you to selectively reset options to their original values
+	// first get all initial values through 'ajaxAction', and then create an object with updates
+	// and calls 'updateOptions'. Accepts an array of keys (or one key as string) as an argument
+	// and 'afterCallback', which will be called after the options are updated
+	const resetOptions = useCallback((toBeReset, afterCallback = null) => {
+		ajaxAction('default_options', options => {
+			const update = reduce(castArray(toBeReset), (acc, value) => {
+				const resetValue = get(options, value, null);
+				if(resetValue !== null) acc[value] = resetValue;
+				return acc;
+			}, {});
+			updateOptions(update, false, afterCallback);
+		});
+	}, [ajaxAction, updateOptions]);
+
 	const ajaxAction = useCallback((params, callback) => {
 		ajaxDoAction(params, callback, createNotice, updateLoading);
 	}, [createNotice, updateLoading]);
@@ -119,9 +134,10 @@ const ZukitSkeleton = ({
 					id={ id }
 					wp={ wp }
 					info={ info }
-					title={ `${info.title} ${__('Settings', 'zukit')}` }
+					title={ __('General Settings', 'zukit') }
 					options={ options }
 					updateOptions={ updateOptions }
+					resetOptions={ resetOptions }
 					ajaxAction={ ajaxAction }
 					noticeOperations={ noticeOperations }
 					setUpdateHook={ setUpdateHook }

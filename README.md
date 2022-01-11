@@ -1,7 +1,7 @@
 # Zukit: The Developer Framework for WordPress.
 
-[![Zukit Version](https://img.shields.io/github/package-json/v/picasso/zukit?style=for-the-badge)]()
-[![Zukit: Tested WP Version](https://img.shields.io/github/package-json/testedWP/picasso/zukit?color=4ab866&label=wordpress%20tested&style=for-the-badge)]()
+[![Zukit Version](https://img.shields.io/github/package-json/v/picasso/zukit?style=for-the-badge)](https://github.com/picasso/zukit/wiki)
+[![Zukit: Tested WP Version](https://img.shields.io/github/package-json/testedWP/picasso/zukit?color=4ab866&label=wordpress%20tested&style=for-the-badge)](https://wordpress.org)
 [![Zukit Required PHP Version](https://img.shields.io/github/package-json/requiresPHP/picasso/zukit?color=bc2a8d&label=php&style=for-the-badge)](https://www.php.net/)
 [![License](https://img.shields.io/github/license/picasso/zukit?color=fcbf00&style=for-the-badge)](https://github.com/picasso/zukit/blob/master/LICENSE)
 
