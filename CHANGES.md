@@ -1,3 +1,6 @@
+### 2.3.1 ###
+* tested for compatibility with WP 5.8.3
+
 ### 2.3.0 ###
 * adapted to WordPress 5.8.2
 * reset admin color scheme if `Admin colors` add-on or the plugin was deactivated

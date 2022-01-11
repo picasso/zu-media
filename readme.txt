@@ -2,8 +2,8 @@
 Contributors: dmitryrudakov
 Tags: gutenberg, folders, dominant color, admin, media library folders, media library
 Requires at least: 5.3.0
-Tested up to: 5.8.2
-Stable tag: 2.3.0
+Tested up to: 5.8.3
+Stable tag: 2.3.1
 License: GPLv2 or later
 Requires PHP: 7.2.0
 
@@ -55,6 +55,8 @@ This plugin includes several enhancements to the WordPress Media Library that ca
 
 == Changelog ==
 
+### 2.3.1 ###
+* tested for compatibility with WP 5.8.3
 ### 2.3.0 ###
 * adapted to WordPress 5.8.2
 * reset admin color scheme if `Admin colors` add-on or the plugin was deactivated
