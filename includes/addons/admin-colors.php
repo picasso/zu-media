@@ -36,6 +36,14 @@ class zu_MediaAdminColors extends zukit_Addon {
 		$this->sort_colors();
 	}
 
+	public static function maybe_clean_color_scheme($admin_colors_option = false) {
+		$user_id = get_current_user_id();
+		$current_scheme = get_user_option('admin_color', $user_id);
+		if(!$admin_colors_option && strpos($current_scheme, 'zu-') !== false) {
+			// 'fresh' is name for default color scheme
+			update_user_option($user_id, 'admin_color', 'fresh', true);
+		}
+	}
 
 	private function get_filename($file, $as_uri = false) {
 
