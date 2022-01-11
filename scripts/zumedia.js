@@ -10,17 +10,20 @@ const { ZukitPanel } = wp.zukit.components;
 import { zumedia } from './settings/data.js';
 import ZumediaFolders from './settings/folders.js';
 import ZumediaSizes from './settings/sizes.js';
+import ZumediaRewriteRules from './settings/rewrite.js';
 
 const EditZumedia = ({
 		wp,
 		title,
 		options,
 		updateOptions,
+		resetOptions,
 		setUpdateHook,
 		ajaxAction,
 }) => {
 
-	const { options: optionsData, galleryType: galleryData, folders } = zumedia;
+	const { options: optionsData, galleryType: galleryData, folders, rewrite } = zumedia;
+// Zubug.data({ rewrite });
 
 	return (
 			<>
@@ -33,6 +36,15 @@ const EditZumedia = ({
 					data={ folders }
 					options={ options }
 					updateOptions={ updateOptions }
+					ajaxAction={ ajaxAction }
+					setUpdateHook={ setUpdateHook }
+				/>
+				<ZumediaRewriteRules
+					data={ rewrite }
+					options={ options }
+					updateOptions={ updateOptions }
+					resetOptions={ resetOptions }
+					ajaxAction={ ajaxAction }
 				/>
 				<ZumediaSizes
 					ajaxAction={ ajaxAction }
