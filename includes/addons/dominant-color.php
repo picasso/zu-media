@@ -9,16 +9,18 @@ class zu_MediaDominant extends zukit_Addon {
 	private static $def_dominant_color = '#333333';
 	private $meta_key = 'mplus_dominant_color';
 	private $accurate = false;
+	private $content_path;
 
 	protected function config() {
 		return ['name'	=> 'zumedia_dominant'];
 	}
 
-	public static function default_color() {
-		return self::$def_dominant_color;
+	public function default_color() {
+		return $this->snippets('get_default_background_color');
 	}
 
 	protected function construct_more() {
+		$this->content_path = wp_normalize_path(dirname(WP_CONTENT_DIR) . '/wp-content/');
 		add_action('add_attachment', [$this, 'attachment_save']);
 		add_filter('attachment_fields_to_edit', [$this, 'add_attachment_field'], 10, 2);
 		add_filter('attachment_fields_to_save', [$this, 'save_attachment_field'], 10, 2);
@@ -50,10 +52,11 @@ class zu_MediaDominant extends zukit_Addon {
 		// Calculate the dominant color
 		// Thanks to @onion2k on http://forums.devnetwork.net/viewtopic.php?t=39594
 
-		// 	$i = imagecreatefromjpeg($path);
 		// works for jpeg only
-		$i = @imagecreatefromstring(file_get_contents($path));
-		if($i === false) return self::default_color();
+		$filepath = preg_replace('/^.*\/wp-content\//i', $this->content_path, $path);
+		$image_string = file_get_contents($filepath);
+		$i = @imagecreatefromstring($image_string);
+		if($i === false) return $this->default_color();
 
 		$rTotal = 0;
 		$gTotal = 0;
@@ -88,7 +91,6 @@ class zu_MediaDominant extends zukit_Addon {
 	}
 
 	public function attachment_save($attachment_id) {
-
 		// Callback that saves the dominant color in the meta
 		if(wp_attachment_is_image($attachment_id)) {
 			$image = wp_get_attachment_image_src($attachment_id, $this->accurate ? 'full' : 'large');
@@ -139,15 +141,24 @@ class zu_MediaDominant extends zukit_Addon {
 
 	public function get_dominant_by_attachment_id($attachment_id) {
 		$meta = get_post_meta($attachment_id, $this->meta_key, true);
-		return empty($meta) ? self::default_color() : $meta;
+		return empty($meta) ? $this->default_color() : $meta;
+	}
+
+	public function get_dominant_by_id($post_or_attachment_id = null) {
+		$attachment_id = $this->snippets('get_attachment_id', $post_or_attachment_id ?? get_the_ID());
+		return $this->get_dominant_by_attachment_id($attachment_id);
 	}
 
 	public function update_dominant_by_attachment_id($attachment_id) {
 		return $this->attachment_save($attachment_id);
 	}
 
-	private function update_all_images() {
+	public function update_dominant_by_id($post_or_attachment_id = null) {
+		$attachment_id = $this->snippets('get_attachment_id', $post_or_attachment_id);
+		return $this->update_dominant_by_attachment_id($attachment_id);
+	}
 
+	private function update_all_images() {
 		$attachments = get_posts([
 	        'post_type'      		=> 'attachment',
 	        'post_status' 			=> 'any',
