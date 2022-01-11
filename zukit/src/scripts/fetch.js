@@ -9,13 +9,15 @@ import { messageWithError, toJSON } from './utils.js';
 
 const cacheKey = 'cache';
 const routerKey = 'router';
-const apiBaseURL = '/zukit/v1/';
+const restDefaults = { router: null, root: 'zukit', version: 1 };
+const apiBaseURL = `/${restDefaults.root}/v${restDefaults.version}/`;
 
 // restRouter serves to identify the plugin that currently uses the REST API,
 // since all plugins inherit the same Zukit_plugin class and identification
 // is required to determine which of the active plugins should respond to ajax requests.
 // Therefore, we automatically add the 'router' param to all API request.
 let restRouter = null;
+let restBasics = restDefaults;
 
 // Ajax actions and options update --------------------------------------------]
 
@@ -125,12 +127,15 @@ function getHook(hooks, update) {
 	return [key, hook];
 }
 
-function hookOptionsUpdate(updateValues, hooks) {
+function hookOptionsUpdate(updateValues, hooks, afterAjaxCallback) {
 
 	const [updateKey, updateHook] = getHook(hooks, updateValues);
-	if(!_.isFunction(updateHook)) return _.noop;
-
-	return () => updateHook(updateKey, updateValues[updateKey]);
+	if(!_.isFunction(updateHook) && !_.isFunction(afterAjaxCallback)) return _.noop;
+	// const onUpdateCallback = ()
+	return () => {
+		if(_.isFunction(afterAjaxCallback)) afterAjaxCallback();
+		if(_.isFunction(updateHook)) updateHook(updateKey, updateValues[updateKey]);
+	};
 }
 
 function hookOptionsReset(options, hooks) {
@@ -162,7 +167,7 @@ export function ajaxDoAction(params, callback, createNotice, updateLoading) {
 	});
 }
 
-export function ajaxUpdateOptions(keys, values, createNotice, updateHooks) {
+export function ajaxUpdateOptions(keys, values, createNotice, updateHooks, onSuccessCallback) {
 
 	// если 'keys' is null - значит это options reset и просто проверяем все hooks
 	if(keys === null) {
@@ -183,7 +188,7 @@ export function ajaxUpdateOptions(keys, values, createNotice, updateHooks) {
 	};
 
 	postAndCatchWithOptions({ ...requestData,
-		onSuccess: hookOptionsUpdate(values, updateHooks),
+		onSuccess: hookOptionsUpdate(values, updateHooks, onSuccessCallback),
 		onError: onErrorAjax(createNotice),
 	});
 }
@@ -201,10 +206,6 @@ function parseError(error, requestKey) {
 		param = _.isNil(param) ? match[1] : `${match[1]} [${param}]`;
 	}
 	return [message, param];
-}
-
-export function setRestRouter(router) {
-	restRouter = router;
 }
 
 // Convert object to query string and skip "unwanted" properties
@@ -263,6 +264,21 @@ function requestURLWithRoot(root, version, url, options, router = null, picked =
 	return requestURL(url, options, router, picked, apiBase);
 }
 
+function requestCustomURL(url, options, router = null, picked = []) {
+	const apiBase = `/${restBasics.root}/v${restBasics.version}/`;
+	return requestURL(url, options, router, picked, apiBase);
+}
+
+export function setRestRouter(router) {
+	restRouter = _.isString(router) ? router : (_.get(router, 'rest.router', null) || _.get(router, 'router', null));
+}
+
+export function setRestBasics(data) {
+	if(_.isNil(data)) return {restBasics, restRouter};
+	restRouter = _.get(data, 'rest.router', null) || _.get(data, 'router', null);
+	restBasics = _.get(data, 'rest', restDefaults);
+}
+
 // create GET API Promise with Route and Options, then execute it and process results with callbacks
 export function fetchAndCatchWithOptions({ route, options, picked, onSuccess, onError }) {
 
@@ -294,7 +310,9 @@ export function postAndCatchWithOptions({ route, options, picked, onSuccess, onE
 // Subset of functions for 'zukit-blocks'
 export const blocksSet = {
 	serializeData,
+	setRestBasics,
 	requestURL: requestURLWithRoot,
+	restRequestURL: requestCustomURL,
 	fetchAndCatchWithOptions,
 	postAndCatchWithOptions,
 };

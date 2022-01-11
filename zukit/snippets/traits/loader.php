@@ -1,7 +1,7 @@
 <?php
 trait zusnippets_Loader {
 
-	// Loader  function -------------------------------------------------------]
+	// SVG loaders ------------------------------------------------------------]
 
 	public function loader($loader = 0, $duration = 0.6, $classes = 'zu-loader', $opacity = 0.2) {
 

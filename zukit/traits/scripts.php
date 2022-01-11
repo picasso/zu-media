@@ -7,7 +7,7 @@ trait zukit_Scripts {
     // We needed the ability to async or defer our scripts
     private $async_defer = [];
 
-    protected function config_singleton_scripts() {
+    protected function singleton_config_scripts() {
         $this->dir = get_stylesheet_directory();
         $this->uri = get_stylesheet_directory_uri();
         // maybe add attributes for asynchronously loading or deferring scripts.
@@ -15,6 +15,11 @@ trait zukit_Scripts {
     }
 
     // Scripts management -----------------------------------------------------]
+
+    public function is_origin($get_root = false) {
+        $root_dirname = dirname(self::$zukit_root);
+        return $get_root ? $root_dirname : $root_dirname === ($this->dir.'/zukit');
+	}
 
     public function zukit_dirname($subdir = null) {
         return dirname(self::$zukit_root).(empty($subdir) ? '' : '/'.ltrim($subdir, '/'));
@@ -28,6 +33,11 @@ trait zukit_Scripts {
     public function get_filepath($is_style, $is_frontend, $file) {
         $dir = $is_frontend ? ($is_style ? 'css' : 'js') : ($is_style ? 'admin/css' : 'admin/js');
 		return sprintf($is_style ? '/%2$s/%1$s.css' : '/%2$s/%1$s.min.js', $file, $dir);
+	}
+
+    public function get_full_filepath($file, $is_style = false, $is_frontend = false) {
+        $filepath = $this->get_filepath($is_style, $is_frontend, $file);
+		return $this->sprintf_dir($filepath);
 	}
 
     public function get_version($filename = '', $refresh = false) {
@@ -126,7 +136,7 @@ trait zukit_Scripts {
             // and boolean values to be interpreted as strings
             // https://wpbeaches.com/using-wp_localize_script-and-jquery-values-including-strings-booleans-and-integers/
             if(!$is_style && !empty($data)) {
-                $jsdata_name = $data['jsdata_name'] ?? $this->prefix.'_jsdata';
+                $jsdata_name = $data['jsdata_name'] ?? $this->prefix_it('jsdata', '_');
                 if(isset($data['jsdata_name'])) unset($data['jsdata_name']);
                 wp_localize_script($handle, $jsdata_name, ['data' => $data]);
             }

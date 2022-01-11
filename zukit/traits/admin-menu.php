@@ -14,15 +14,17 @@ trait zukit_AdminMenu {
 
 	public function admin_menu_config() {
 		add_filter('custom_menu_order', [$this, 'admin_menu_modify']);
-		$this->snippets('add_admin_style',
-			'.wp-core-ui .wp-submenu .wp-menu-separator a',
-			'border-top: 1px solid;
-		     opacity: 0.2;
-		     width: 100%;
-		     display: inline-block !important;
-			 pointer-events: none;
-		     cursor: default;'
-		);
+		if($this->is_origin()) {
+			$this->snippets('add_admin_inline_style',
+				'.wp-core-ui .wp-submenu .wp-menu-separator a',
+				'border-top: 1px solid;
+			     opacity: 0.2;
+			     width: 100%;
+			     display: inline-block !important;
+				 pointer-events: none;
+			     cursor: default;'
+			);
+		}
 	}
 
 	// 	To modify menu and submenu - pass array with optional keys  ['reorder', 'rename', 'remove', 'separator']

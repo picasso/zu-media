@@ -60,7 +60,7 @@ const ZukitSidebar = ({
 		updateOptions({ [`${debugSet}.${key}`]: !get(options, `${debugSet}.${key}`) })
 	}, [debugSet, options, updateOptions]);
 
-	const resetOptions = useCallback(() => {
+	const resetAllOptions = useCallback(() => {
 		ajaxAction('reset_options', options => updateOptions(options, true));
 	}, [ajaxAction, updateOptions]);
 
@@ -72,8 +72,8 @@ const ZukitSidebar = ({
 					<h2 className="block-editor-block-card__title">
 						{ title }
 					</h2>
-					<span className="block-editor-block-card__description">
-					{ description }
+					<span className="block-editor-block-card__description __zu_markdown">
+					{ simpleMarkdown(description, { br: true, json: true }) }
 					</span>
 				</div>
 			</div>
@@ -101,7 +101,7 @@ const ZukitSidebar = ({
 						className="__plugin_actions admin-blue"
 						icon={ 'admin-settings' }
 						isSecondary
-						onClick={ resetOptions }
+						onClick={ resetAllOptions }
 					>
 						{ __('Reset Plugin Options', 'zukit') }
 					</Button>

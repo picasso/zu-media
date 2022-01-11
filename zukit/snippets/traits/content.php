@@ -35,6 +35,10 @@ trait zusnippets_Content {
         return $html;
     }
 
+    function remove_p($html) {
+        return preg_replace('/<p\b[^>]*>(.*?)<\/p>/i', '$1', $html);
+    }
+
 	public function remove_empty_p($html) {
 
 		// clean up p tags around block elements
@@ -71,33 +75,40 @@ trait zusnippets_Content {
 
 	public function fix_content($content, $add_p = false, $preserve_br = true) {
 		$replace_tags_from_to = array (
-			'<br />' => '',
-			"<br />\n" => '',
+            '<br/>'     => '',
+            '<br />'    => '',
+            "<br/>\n"   => '',
+            "<br />\n"  => '',
 		);
-
 		$preserve_tags_from_to = array (
-			'<br />' => '[_br_]',
-			"<br />\n" => '[_br_]',
+            '<br/>'     => '[_br_]',
+            '<br />'    => '[_br_]',
+            "<br/>\n"   => '[_br_]',
+            "<br />\n"  => '[_br_]',
 		);
-
-		$fixed = preg_replace('/^\s|\s$/', '', strtr(trim($content), $preserve_br ? $preserve_tags_from_to : $replace_tags_from_to));
-		if($preserve_br) $fixed = str_replace('[_br_]', '<br />', trim($fixed));
+        $fixed = strtr(trim($content), $preserve_br ? $preserve_tags_from_to : $replace_tags_from_to);
+        $fixed = preg_replace('/^\s+|\s+$/', '', $fixed);
+        $fixed = preg_replace('/^\n+|\n+$/', '', $fixed);
+		if($preserve_br) $fixed = str_replace('[_br_]', '<br/>', trim($fixed));
 		// remove <br> right after <p> & right before </p>
 		if($add_p) $fixed = preg_replace([
-			'#<p>\s*<br\s*/>#i',
-			'#<br\s*/>\s*</p>#i'
-			],
-			[
+			'#<p>\s*<br\s*/>#im',
+			'#<br\s*/>\s*</p>#im',
+            '#^<p>#im',
+            '#</p>$#im',
+			], [
 			'<p>',
-			'</p>'
-		], sprintf('<p>%1$s</p>', $fixed));
+			'</p>',
+            '',
+            '',
+		], sprintf('<p>%s</p>', $fixed));
 		return trim($fixed);
 	}
 
 	public function get_excerpt($post_id = null, $amount = 270, $force_from_content = false) {
 		global $post;
 
-		if(is_null($post_id)) $post_id = $post->ID;
+		if(is_null($post_id)) $post_id = is_object($post) ? $post->ID : null;
 
 		if(!$force_from_content && has_excerpt($post_id)) {
 			$raw_excerpt = apply_filters('the_excerpt', get_post_field('post_excerpt', $post_id));

@@ -2,7 +2,7 @@
 
 trait zusnippets_Thumbnails {
 
-    private $random_attachment_id = null;
+    private $default_dominant_color = '#333333';
 
     public function get_attachment_id($post_or_attachment_id = null) {
 		if(get_post_type($post_or_attachment_id) === 'attachment') return $post_or_attachment_id;
@@ -13,12 +13,14 @@ trait zusnippets_Thumbnails {
 		return null;
 	}
 
+    // when $size is null - we only need to check if the `thumbnail` exists (returns false or true)
     public function get_post_thumbnail($post_id = null, $size = 'full') {
 		if(has_post_thumbnail($post_id)) {
+            if($size === null) return true;
 			$imgsrc = wp_get_attachment_image_src(get_post_thumbnail_id($post_id), $size);
 			return $imgsrc[0];
 		} else
-			return '';
+			return $size === null ? false : '';
 	}
 
     // Color, Background, Thumbnail, Attachment functions ---------------------]
@@ -49,7 +51,6 @@ trait zusnippets_Thumbnails {
 	public function get_post_gallery($post_id = null) {
 
 		// Replace of WP 'get_post_gallery' to avoid multiple resolving of shortcodes
-
 		$check_for_blocks = function_exists('has_blocks');
 		if(!$post = get_post($post_id)) return [];
 
@@ -73,60 +74,19 @@ trait zusnippets_Thumbnails {
 		return isset($galleries[0]) ? $galleries[0] : get_post_gallery_blocks($post->post_content);
 	}
 
-	public function get_featured_from_posts($posts) {
-
-		$ids = [];
-		if(empty($posts)) return $ids;
-
-		foreach($posts as $post) {
-			$post_id = $post instanceof WP_Post ? $post->ID : $post;
-			$attachment_id = $this->get_attachment_id($post_id);
-			if(!empty($attachment_id)) $ids[] = $attachment_id;
-		}
-		return $ids;
-	}
-
-	public function get_featured_attachment_id($post_id = null) {
-		// if there is no featured_attachment - use it from $this->random_attachment_id
-		// if $post_id = -1 then simply return 'random_attachment_id'
-
-		if($post_id == -1) return $this->random_attachment_id;
-
-		$attachment_id = get_post_thumbnail_id($post_id);
-		$attachment_id = (empty($attachment_id) && !empty($this->random_attachment_id)) ? $this->random_attachment_id : $attachment_id;
-		return $attachment_id;
-	}
-
-	public function set_random_featured_attachment_id($post_id = null, $gallery = null, $only_landscape = false) {
-
-		$gallery = empty($gallery) ? $this->get_post_gallery($post_id) : $gallery;
-		$ids = empty($gallery) ? [] : (isset($gallery['ids']) ? wp_parse_id_list($gallery['ids']) : $gallery);
-
-		$this->random_attachment_id = null;
-
-		if(!empty($ids) && is_array($ids)) {
-			if($only_landscape && function_exists('mplus_instance')) {
-				$landscaped = array_values(array_intersect($ids, mplus_instance()->get_all_landscaped()));
-				if(empty($landscaped)) $landscaped = $ids;
-				$this->random_attachment_id = (int)$landscaped[rand(0, count($landscaped) - 1)];
-			} else {
-				$this->random_attachment_id = (int)$ids[rand(0, count($ids) - 1)];
-			}
-		}
-
-		return $this->random_attachment_id;
-	}
-
 	public function get_background_image($image_url = null, $post_id = null, $with_quote = true) {
-
 		if(is_null($image_url)) $image_url = $this->get_post_thumbnail($post_id);
 		$image_bg = empty($image_url) ? '' : sprintf('background-image:url(%2$s%1$s%2$s);', $image_url,  $with_quote ? '&quot;' : '"');
 		return $image_bg;
 	}
 
-	public function get_background_color($post_or_attachment_id = null) {
-		$color = function_exists('zumedia') ? zumedia()->get_dominant_by_id($post_or_attachment_id) : 'black';
-		$color_bg = empty($color) ? '' : 'background-color:'.$color.';';
-		return $color_bg;
+    public function get_default_background_color() {
+         return $this->default_dominant_color;
+    }
+
+	public function get_background_color($post_or_attachment_id = null, $with_important = false, $as_array = false) {
+		$color = $this->maybe_call('get_dominant_by_id', $post_or_attachment_id) ?? $this->default_dominant_color;
+		$color_bg = empty($color) ? '' : sprintf('background-color:%1$s%2$s;', $color, $with_important ? ' !important' : '');
+		return $as_array ? [$color, $color_bg] : $color_bg;
 	}
 }

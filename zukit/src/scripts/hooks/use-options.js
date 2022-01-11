@@ -37,18 +37,21 @@ export function useOptions(initialOptions, createNotice) {
 	const [options, dispatch] = useReducer(optionsReducer, initialOptions);
 	const hooks = useRef(null);
 
-	const updateOptions = useCallback((update, reset = false) => {
+	const updateOptions = useCallback((update, reset = false, afterUpdateCallback = null) => {
 
 		if(!isPlainObject(update)) return;
 
 		if(reset) {
 			// forced to use the callback trick to get the current 'options'
 			dispatch({ type: 'pre-reset', payload: prevOptions => {
-				ajaxUpdateOptions(null, { prev: prevOptions, next: update }, null, hooks.current);
+				ajaxUpdateOptions(null, { 
+					prev: prevOptions,
+					next: update
+				}, null, hooks.current, afterUpdateCallback);
 				dispatch({ type: 'reset', payload: update });
 			} });
 		} else {
-			ajaxUpdateOptions(keys(update), update, createNotice, hooks.current);
+			ajaxUpdateOptions(keys(update), update, createNotice, hooks.current, afterUpdateCallback);
 			dispatch({ type: 'set', payload: update });
 		}
 	}, [createNotice]);

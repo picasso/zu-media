@@ -5,46 +5,46 @@ require_once('zukit-addon.php');
 require_once('zukit-blocks.php');
 require_once('zukit-table.php');
 
+require_once('traits/options.php');
 require_once('traits/admin.php');
 require_once('traits/admin-menu.php');
-require_once('traits/ajax.php');
+require_once('traits/ajax-rest.php');
 require_once('traits/debug.php');
+require_once('traits/exchange.php');
 
 // Basic Plugin Class ---------------------------------------------------------]
 
 class zukit_Plugin extends zukit_SingletonScripts {
 
-	private static $zukit_version = '1.2.3'; //.' (modified)';
+	private static $zukit_version = '1.4.7'; // .' (modified)';
 
 	public $config;
 
 	protected $options_key;
 	protected $options = null;
-	protected $path_autocreated = false;
+	protected $path_autocreated = true;
 	protected $data = [];
 	protected $addons = [];
 	protected $blocks = null;
 
 	private static $zukit_translations = false;
 	private $translations_loaded = null;
-	private $is_plugin = true;
+	private $is_plugin = false;
 	private $refresh_scripts = false;
 
-	// Admin basics, menu management and REST API support
-	use zukit_Admin, zukit_AdminMenu, zukit_Ajax, zukit_Debug;
+	// Options, admin basics, menu management and REST API support
+	use zukit_Options, zukit_Admin, zukit_AdminMenu, zukit_AjaxREST, zukit_Debug;
 
-	function config_singleton($file) {
-
+	function singleton_config($file) {
 		if(isset($file)) {
-			$this->is_plugin = strpos($file, 'wp-content/plugins/') !== false;
+			$this->data = Zukit::get_file_metadata($file);
+			$this->is_plugin = $this->data['Kind'] === 'Plugin';
+			$this->version = $this->data['Version'];
 
 			if($this->is_plugin) {
 				$this->dir = untrailingslashit(plugin_dir_path($file));
 				$this->uri = untrailingslashit(plugin_dir_url($file));
 			}
-
-			$this->data = Zukit::plugin_data($file);
-			$this->version = $this->data['Version'];
 		}
 
 		$this->config = array_replace_recursive([
@@ -73,21 +73,28 @@ class zukit_Plugin extends zukit_SingletonScripts {
 			// custom blocks
 			'blocks'		=> zukit_Blocks::defaults(),
 
+			// MISCELLANEOUS:
+
+			// if set to true then options will always be taken from default values
+			'debug_defaults'	=> false,
+
 		], $this->config() ?? []);
 
 		$this->prefix = $this->get('prefix') ?? $this->prefix;
-		$this->options_key = $this->get('options_key') ?? $this->prefix.'_options';
+		$this->options_key = $this->get('options_key') ?? $this->prefix_it('options', '_');
 		// keep updated values in config (there they can be available for add-ons)
 		$this->config['prefix'] = $this->prefix;
 		$this->config['options_key'] = $this->options_key;
 
-		// Load 'options' before any other actions
-		add_action('init', [$this, 'options'], 9);
-		add_action('init', [$this, 'init'], 10);
-		add_action('init', function() { $this->do_addons('init'); }, 11);
+		// Load 'options' before any other methods & actions ('true' - check if installation is required)
+		$this->options(true);
 
-		add_action('admin_init', [$this, 'admin_init'], 10);
-		add_action('admin_init', function() { $this->do_addons('admin_init'); }, 11);
+		// divide the 'init' for plugins and themes: ($is_admin, $for_plugins)
+		add_action('init', function() { $this->init_action(false, true); }, 9);
+		add_action('init', function() { $this->init_action(false, false); }, 10);
+
+		add_action('admin_init', function() { $this->init_action(true, true); }, 9);
+		add_action('admin_init', function() { $this->init_action(true, false); }, 10);
 
 		add_action('wp_enqueue_scripts', [$this, 'frontend_enqueue'], 10);
 		add_action('wp_enqueue_scripts', function() { $this->do_addons('enqueue'); }, 11);
@@ -118,10 +125,25 @@ class zukit_Plugin extends zukit_SingletonScripts {
 	protected function config() {}
 	protected function status() {}
 
-	public function init() {}
-	public function admin_init() {}
-
 	public function zukit_ver() { return self::$zukit_version; }
+
+	// split the 'init' for plugins and themes
+	// the 'init' for plugins will be called before the themes
+	public function init_action($is_admin, $for_plugins) {
+		$plugin_related = $this->is_plugin && $for_plugins;
+		$theme_related = !$this->is_plugin && !$for_plugins;
+		if(!$is_admin && ($plugin_related || $theme_related)) {
+			$this->init();
+			$this->do_addons('init');
+		}
+		if($is_admin && ($plugin_related || $theme_related)) {
+			$this->admin_init();
+			$this->do_addons('admin_init');
+		}
+	}
+
+	protected function init() {}
+	protected function admin_init() {}
 
 	// Translations -----------------------------------------------------------]
 
@@ -179,18 +201,32 @@ class zukit_Plugin extends zukit_SingletonScripts {
 		return $addon;
 	}
 
-	public function do_addons($action, $param = '') {
+	public function do_addons($action, $param = '', $options = null, &$return = null) {
+		$swap_param_and_return = $options['swap'] ?? false;
+		$single_param = $options['single'] ?? true;
+		$collected = ($options['collect'] ?? false) ? [] : null;
 		foreach($this->addons as $addon) {
-
-			if(method_exists($addon, $action)) call_user_func_array([$addon, $action], [$param]);
-			else $this->logc('Unknown addon method!', [
-				'action' => $action,
-				'param' => $param]
-			);
+			if(method_exists($addon, $action)) {
+				$return = call_user_func_array([$addon, $action], $single_param ? [$param] : ($param ?? []));
+				if(!is_null($collected)) $collected[get_class($addon)] = $return;
+				if($swap_param_and_return) $param = $return;
+			}
+			else {
+				if(!is_null($collected)) $collected[get_class($addon)] = null;
+				else $this->logc('Unknown addon method!', [
+					'addons'				=> $this->addons,
+					'action'				=> $action,
+					'param'					=> $param,
+					'swap_param_and_return'	=> $swap_param_and_return,
+					'single_param'			=> $single_param,
+					'collected'				=> $collected,
+				]);}
 		}
+		return $collected;
 	}
 
 	public function reset_addons() { $this->do_addons('init_options'); }
+	public function extend_from_addons(&$options) { $this->do_addons('extend_parent_options', $options, ['swap' => true], $options); }
 	public function clean_addons() { $this->do_addons('clean'); }
 	public function ajax_addons($action, $value) {
 
@@ -212,148 +248,24 @@ class zukit_Plugin extends zukit_SingletonScripts {
 		return $result;
 	}
 
-	// Options management -----------------------------------------------------]
-	// !! Should not use these functions in construct_more() !!
-	//
-	public function options() {
-		$options = get_option($this->options_key);
-		// Check whether we need to install an option, used during installation of plugin
-		if($options === false) $options = $this->reset_options(false);
-		$this->options = $options;
-		return $this->options;
-	}
-
-	public function update_options($options = null) {
-		return update_option($this->options_key, $options ?? $this->options);
-	}
-
-	public function reset_options($withAddons = true) {
-		$options = $this->get('options') ?? [];
-		$this->update_options($options);
-		$this->options = $options;
-		if($withAddons) $this->reset_addons();
-		return $this->options;
-	}
-
-	// If we remove from the options belonging to the add-on, then after the operation
-	// we do not update the options - add-on will take care of this
-	public function del_option($key, $addon_options = null) {
-		$result = true;
-		$options = is_null($addon_options) ? $this->options : $addon_options;
-		if(array_key_exists($key, $options)) {
-			unset($options[$key]);
-			if(is_null($addon_options)) {
-				$this->options = $options;
-				$result = $this->update_options();
-			}
-		}
-		return $result === false ? false : $options;
-	}
-
-	// If 'key' contains 'path' - then resolve it before update
-	// When $this->path_autocreated is true then if a portion of path doesn't exist, it's created
-	// If we set value for the options belonging to the add-on, then after the operation
-	// we do not update the options - add-on will take care of this
-	public function set_option($key, $value, $rewrite_array = false, $addon_options = null) {
-
-		// $value cannot be undefined or null!
-		if(!isset($value) || is_null($value)) return $options;
-
-		$result = true;
-		$options = is_null($addon_options) ? $this->options : $addon_options;
-		if(!$rewrite_array && is_array($value)) $options[$key] = array_replace_recursive($options[$key] ?? [], $value);
-		else {
-			// sets a value in a nested array based on path (if presented)
-			$pathParts = explode('.', $key);
-			$pathCount = count($pathParts);
-
-			if($pathCount === 1) {
-				$options[$key] = $value;
-			} else {
-				$lastKey = $pathParts[$pathCount-1];
-				$current = &$options;
-				foreach($pathParts as $pathKey) {
-					if($pathCount === 1) break;
-					if(!is_array($current)) {
-						if($this->path_autocreated) $current = [];
-						else return false;
-					}
-					$current = &$current[$pathKey];
-					$pathCount--;
-				}
-				if(!is_array($current)) {
-					if($this->path_autocreated) $current = [];
-					else return false;
-				}
-				$current[$lastKey] = $value;
-			}
-		}
-
-		if(is_null($addon_options)) {
-			$this->options = $options;
-			$result = $this->update_options();
-		}
-		return $result === false ? false : $options;
-	}
-
-	// If 'key' contains 'path' - then resolve it before get
-	public function get_option($key, $default = '', $addon_options = null) {
-		$options = is_null($addon_options) ? $this->options : $addon_options;
-
-		// gets a value in a nested array based on path (if presented)
-		$pathParts = explode('.', $key);
-		$pathCount = count($pathParts);
-		$set = $options;
-		if($pathCount > 1) {
-			$key = $pathParts[$pathCount-1];
-			foreach($pathParts as $pathKey) {
-				if($pathCount === 1) break;
-				if(!is_array($set)) return $default;
-				$set = $set[$pathKey] ?? null;
-				$pathCount--;
-			}
-		}
-
-		if(!isset($set[$key])) return $default;
-
-		// return and cast to default value type
-		if(is_bool($default)) return filter_var($set[$key], FILTER_VALIDATE_BOOLEAN);
-		if(is_int($default)) return intval($set[$key]);
-		if(is_string($default))	return strval($set[$key]);
-
-		return $set[$key];
-	}
-
-	public function is_option($key, $check_value = true, $addon_options = null) {
-		$value = $this->get_option($key, $this->def_value($check_value), $addon_options);
-		return $value === $check_value;
-	}
-
-	private function def_value($type) {
-		// return default value for given type
-		if(is_bool($type)) return false;
-		if(is_int($type)) return 0;
-		if(is_string($type)) return '';
-		return null;
-	}
-
 	// Scripts & Paths management ---------------------------------------------]
 
 	public function sprintf_dir(...$params) {
 		$path = call_user_func_array('sprintf', $params);
-		return $this->dir.$path;
+		return $this->dir . '/' . ltrim($path, '/\\');
 	}
 
 	public function sprintf_uri(...$params) {
 		$path = call_user_func_array('sprintf', $params);
-		return $this->uri.$path;
+		return $this->uri . '/' . ltrim($path, '/\\');
 	}
 
 	private function script_defaults() {
-
 		// for admin handle will be '<prefix>' and for frontend -> '<prefix>-<suffix>'
+		// for the theme and main stylesheet will be '<prefix>-main'
 		$admin_handle = $this->get('prefix');
 		$frontend_handle = $this->prefix_it($this->get('suffix'));
+		$main_style_handle = $this->prefix_it('main');
 
 		return [
 			// front-end script & style
@@ -368,7 +280,12 @@ class zukit_Plugin extends zukit_SingletonScripts {
 				'handle'	=> $frontend_handle,
 				'refresh'	=> $this->refresh_scripts,
 			],
-
+			'main_style'	=> [
+				'deps'		=> [],
+				'handle'	=> $main_style_handle,
+				'absolute'	=> true,
+				'refresh'	=> $this->refresh_scripts,
+			],
 			// plugin/theme settings page script & style
 			'settings_script'	=> [
 				'deps'		=> ['zukit'],
@@ -382,6 +299,10 @@ class zukit_Plugin extends zukit_SingletonScripts {
 				'refresh'	=> $this->refresh_scripts,
 			],
 		];
+	}
+
+	public function get_file_version($filepath) {
+		return $this->get_version($filepath, $this->refresh_scripts);
 	}
 
 	public function enforce_defaults($is_style, $is_frontend, $params) {
@@ -437,7 +358,7 @@ class zukit_Plugin extends zukit_SingletonScripts {
 	protected function should_load_js($is_frontend, $hook) { return false; }
 	protected function enqueue_more($is_frontend, $hook) {}
 
-	public function frontend_handles() {
+	public function frontend_handles($handle = null) {
 		$handles = ['script' => null, 'style' => null];
 		if($this->should_load_js(true, null)) $handles['script'] = $this->enqueue_script(
 			null,
@@ -449,10 +370,22 @@ class zukit_Plugin extends zukit_SingletonScripts {
 			$this->css_params_validated(true),
 			true
 		);
-		return $handles;
+		return $handle ? ($handles[$handle] ?? null) : $handles;
+	}
+
+	public function enqueue_main_style() {
+		$params = $this->get('main_style', [], $this->script_defaults());
+		if(is_child_theme() && $this->is_option('load_parent_css')) {
+			$parent_params = $params;
+			$parent_params['handle'] = $this->prefix_it('parent');
+			$this->enqueue_style($this->sprintf_uri('style.css'), $params);
+			$params['deps'][] = $parent_params['handle'];
+		}
+		$this->enqueue_style(get_stylesheet_uri(), $params);
 	}
 
 	public function frontend_enqueue() {
+		if(!$this->is_plugin) $this->enqueue_main_style();
 		if($this->should_load_css(true, null)) $this->enqueue_style(null, $this->css_params_validated(true));
 		if($this->should_load_js(true, null)) $this->enqueue_script(null, $this->js_params_validated(true));
 		$this->enqueue_more(true, null);
@@ -529,11 +462,18 @@ class zukit_Plugin extends zukit_SingletonScripts {
 		return $data;
 	}
 
+	// redefined this method from snippets for convenience (it's very often used)
+	public function array_with_defaults($array, $defaults, $only_default_keys = true, $clean = true) {
+		return $this->snippets('array_with_defaults', $array, $defaults, $only_default_keys, $clean);
+	}
+
 	public function prefix_it($str, $divider = '-') {
+		// if '$str' starts with '!' then do not prefix it (could be an absolute path)
+		if(substr($str, 0, 1) === '!') return $str;
 		return sprintf('%1$s%2$s%3$s', $this->prefix, $divider, $str);
 	}
 
-	public function get($key, $default_value = null, $addon_config = null) {
+	public function get($key, $default_value = null, $addon_config = null, $check_callable = true) {
 		$config = is_null($addon_config) ? $this->config : $addon_config;
 		// If 'key' contains 'path' - then resolve it before get
 		$pathParts = explode('.', $key);
@@ -550,8 +490,15 @@ class zukit_Plugin extends zukit_SingletonScripts {
 		return isset($config[$key]) ? $config[$key] : $default_value;
 	}
 
+	public function get_callable($key, $default_value = null, $addon_config = null) {
+		$value = $this->get($key, $default_value, $addon_config);
+		// we do not use 'is_callable' directly to avoid cases when the 'value' matches the name of the existing function
+		$is_callable = (is_array($value) && is_callable($value)) || ($value instanceof Closure);
+		return $is_callable ? call_user_func($value) : $value;
+	}
+
 	public function params_validated($params, $defaults = []) {
-		$params_not_null = array_filter($params, function($val) { return !is_null($val); });
+		$params_not_null = array_filter($params ?? [], function($val) { return !is_null($val); });
 		return array_replace_recursive($defaults, $params_not_null);
 	}
 
@@ -566,22 +513,21 @@ class zukit_Plugin extends zukit_SingletonScripts {
 	}
 
 	private function blocks_config() {
-		$blocks = $this->get('blocks.blocks');
-		if(!empty($blocks)) {
-			$this->blocks = $this->get('blocks.instance');
-			if(is_null($this->blocks)) $this->blocks = new zukit_Blocks;
+		$blocks = $this->get_callable('blocks.blocks');
+		$instance = $this->get_callable('blocks.instance');
+		if(!empty($blocks) || !empty($instance)) {
+			if(is_null($instance)) $this->blocks = new zukit_Blocks;
+			elseif(is_string($instance) && class_exists($instance)) $this->blocks = new $instance();
 			if($this->blocks instanceof zukit_Blocks) $this->register_addon($this->blocks);
+			else zu_logc('!Your class must inherit from the "zukit_Blocks" class', $instance);
 		}
 	}
 
 	// Error handling ---------------------------------------------------------]
 
-	public function check_error($error, $ajax = false, &$report = null) {
+	public function is_error($error) {
 		if(is_wp_error($error)) {
-			if(isset($report) && isset($report['errors'])) $report['errors'] += 1;
-			if($ajax) $this->ajax_error($error, is_array($report) ? null : $report);
-
-			$this->logc('!WP_Error occurred', $error, $report);
+			zu_logc('!WP_Error occurred', $error->get_error_message());
 			return true;
 		}
 		return false;
@@ -589,10 +535,33 @@ class zukit_Plugin extends zukit_SingletonScripts {
 
 	// Common Interface to Zu Snippets helpers with availability check --------]
 
+	public function has_snippet($name) {
+		if(!function_exists('zu_snippets')) return false;
+		return zu_snippets()->method_exists($name);
+	}
+
+	public function register_snippet($func, $instance = 'self', $default = null) {
+		if(!function_exists('zu_snippets')) return false;
+		zu_snippets()->register_method($func, $instance === 'self' ? $this : $instance, $default);
+		return true;
+	}
+
 	public function snippets($func, ...$params) {
+		return $this->call_snippet(false, $func, $params);
+	}
+
+	// use this method to supress error logging
+	public function _snippets($func, ...$params) {
+		return $this->call_snippet(true, $func, $params);
+	}
+
+	private function call_snippet($quiet, $func, $params) {
 		if(!function_exists('zu_snippets')) return null;
 		$snippets = zu_snippets();
-		if(method_exists($snippets, $func)) return call_user_func_array([$snippets, $func], $params);
-		else return null;
+		if($snippets->method_exists($func)) return call_user_func_array([$snippets, $func], $params);
+		else {
+			if($this->debug_mode && !$quiet) $this->logc('!Snippet called was not found!', $func);
+			return null;
+		}
 	}
 }

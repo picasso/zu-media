@@ -12,25 +12,24 @@ trait zukit_BlockMeta {
 	protected function block_metakeys() {
 
 		// NB:	'show_in_rest' => true will be added to all meta
-		return null;
 
 		// Examples -----------------------------------------------------------]
 
 		// return [
-		// 	// Copyright meta
+		//	// Copyright meta
 		// 	[
-		// 		'key'				=>	'zu_text_copy',
-		// 		'object_subtype'	=>	'page',
-		// 		'type'				=>	'string',
-		// 		'single'			=>	true,
+		// 		'key'				=> 'zu_text_copy',
+		// 		'object_subtype'	=> 'page',
+		// 		'type'				=> 'string',
+		// 		'single'			=> true,
 		// 	],
 		//
 		// 	// Video meta
 		// 	[
-		// 		'key'				=>	'zu_video_cameraman',
-		// 		'object_subtype'	=>	'post',
-		// 		'type'				=>	'string',
-		// 		'single'			=>	true,
+		// 		'key'				=> 'zu_video_cameraman',
+		// 		'object_subtype'	=> 'post',
+		// 		'type'				=> 'string',
+		// 		'single'			=> true,
 		// 	],
 		//
 		// 	// Sidebar Settings meta
@@ -38,27 +37,24 @@ trait zukit_BlockMeta {
 		// 	// https://make.wordpress.org/core/2019/10/03/wp-5-3-supports-object-and-array-meta-types-in-the-rest-api/
 		//
 		// 	[
-		// 		'key'				=>	'zu_sidebar_settings',
-		// 		'object_subtype'	=>	null,
-		// 		'single'			=>	true,
-		// 		'type'				=>	'object',
-		// 		'show_in_rest' 		=>	[
-		//
+		// 		'key'				=> 'zu_sidebar_settings',
+		// 		'object_subtype'	=> null,
+		// 		'single'			=> true,
+		// 		'type'				=> 'object',
+		// 		'show_in_rest' 		=> [
 		// 			'schema' => [
 		// 				'type'		=> 'object',
 		// 				'properties' => [
-		// 					'highlighted' 		=> [	'type' => 'boolean' ],
-		// 				 	'usefont'  			=> [	'type' => 'boolean' ],
+		// 					'highlighted'	=> ['type' => 'boolean'],
+		// 				 	'usefont'		=> ['type' => 'boolean'],
 		// 				],
-		//              ],
-		//
-		//          ],
+		// 			],
+		// 		],
 		// 	],
 		// ];
 	}
 
 	protected function register_metakeys() {
-
 		// Get all block meta
 		$this->metakeys = $this->block_metakeys() ?? [];
 
@@ -66,7 +62,7 @@ trait zukit_BlockMeta {
 
 		foreach($this->metakeys as $meta) {
 
-			$meta_key = isset($meta['key']) ? $meta['key'] : '';
+			$meta_key = isset($meta['key']) ? $meta['key'] : null;
 			if(empty($meta_key)) continue;
 
 			$settings = $meta;

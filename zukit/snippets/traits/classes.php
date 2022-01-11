@@ -4,7 +4,7 @@ trait zusnippets_Classes {
     // Classes manipulations --------------------------------------------------]
 
 	public function split_classes($classes, $as_is = false) {
-		$classes = is_array($classes) ? $classes : preg_split('/[\s,]+/', $classes);
+		$classes = is_array($classes) ? $this->array_flatten($classes) : preg_split('/[\s,]+/', $classes);
 		$classes = array_map('trim', $classes);
 		return $as_is ? $classes : array_unique(array_filter($classes));
 	}

@@ -6,6 +6,8 @@
 if(!class_exists('Zukit')) {
 	class Zukit {
 
+		private static $cache_time = HOUR_IN_SECONDS;
+
 		private static $requires = array(
 			'min_php'	=> '7.2.0',
 			'min_wp'	=> '5.3.0',
@@ -26,7 +28,7 @@ if(!class_exists('Zukit')) {
 	    }
 
 		public static function at_least($file, $params) {
-			$data = self::plugin_data($file);
+			$data = self::get_file_metadata($file);
 			$params = array_merge(
 				self::$requires,
 				array_filter(array('min_php' => $data['RequiresPHP'], 'min_wp' => $data['RequiresWP'])),
@@ -41,11 +43,16 @@ if(!class_exists('Zukit')) {
 			}
 		}
 
-		public static function plugin_data($plugin_file) {
+		public static function get_file_metadata($file) {
+			// try from cache first
+			$cache_id = wp_normalize_path(str_replace(WP_CONTENT_DIR, '', $file));
+			$meta = get_transient($cache_id);
+			if($meta !== false) return $meta;
+
+			$theme_root = WP_CONTENT_DIR . '/themes';
+			$is_theme = strpos($file, $theme_root) !== false;
+
 			$default_headers = array(
-		        'Name'        		=> 'Plugin Name',
-		        'PluginURI'   		=> 'Plugin URI',
-				'GitHubPluginURI'	=> 'GitHub Plugin URI',
 				'GitHubURI'			=> 'GitHub URI',
 		        'Version'     		=> 'Version',
 		        'Description' 		=> 'Description',
@@ -57,7 +64,29 @@ if(!class_exists('Zukit')) {
 		        'RequiresWP'  		=> 'Requires at least',
 		        'RequiresPHP' 		=> 'Requires PHP',
 		    );
-			return get_file_data($plugin_file, $default_headers, 'plugin');
+
+			if($is_theme) {
+				$stylesheet = get_stylesheet();
+				$file = sprintf('%s/%s/style.css', $theme_root, get_stylesheet());
+				$default_headers = array_merge(array(
+					'Name'        		=> 'Theme Name',
+					'ThemeURI'			=> 'Theme URI',
+					'GitHubThemeURI'	=> 'GitHub Theme URI',
+				), $default_headers);
+			} else {
+				$default_headers = array_merge(array(
+					'Name'        		=> 'Plugin Name',
+					'PluginURI'   		=> 'Plugin URI',
+					'GitHubPluginURI'	=> 'GitHub Plugin URI',
+				), $default_headers);
+			}
+
+			$meta = get_file_data($file, $default_headers, $is_theme ? 'theme' : 'plugin');
+			$meta['Kind'] = $is_theme ? 'Theme' : 'Plugin';
+			$meta['URI'] = $is_theme ? $meta['ThemeURI'] : $meta['PluginURI'];
+			$meta['GitHubURI'] = $meta['GitHubURI'] ? $meta['GitHubURI'] : ($is_theme ? $meta['GitHubThemeURI'] : $meta['GitHubPluginURI']);
+			set_transient($cache_id, $meta, self::$cache_time);
+			return $meta;
 		}
 
 		// Check if compatible or maybe all parent classes were loaded in other plugin?
@@ -87,7 +116,7 @@ if(!class_exists('Zukit')) {
 			$not_compat = self::not_compat();
 
 			if($not_compat['php'] || $not_compat['wp']) {
-				$data = self::plugin_data($file);
+				$data = self::get_file_metadata($file);
 				$screen = function_exists('get_current_screen') ? get_current_screen() : null;
 
 				$notice = sprintf($not_compat['php'] ?
