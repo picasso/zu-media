@@ -6,15 +6,15 @@ const { __ } = wp.i18n;
 
 const options = {
 	folders: {
-		label: 	__('Organize files in Media Library Folders?', 'zu-media'),
+		label: 	__('Organize files in Media Library Folders', 'zu-media'),
 		help:	__('Allows to create different folders and organize content with a simple drag and drop.', 'zu-media'),
 	},
 	responsive: {
-		label: 	__('Include support for Responsive Images?', 'zu-media'),
+		label: 	__('Include support for Responsive Images', 'zu-media'),
 		help:	__('Activates filters and functions which support responsiveness. Adds needed custom image sizes.', 'zu-media'),
 	},
 	full_hd: {
-		label: 	__('Add Full HD Image Size?', 'zu-media'),
+		label: 	__('Add Full HD Image Size', 'zu-media'),
 		help:	__('Creates custom "full_hd" image size for responsiveness. Otherwise standard "full" image size will be used.', 'zu-media'),
 		depends: 'responsive',
 	},
@@ -25,19 +25,19 @@ const options = {
 	media_ratio: {
 		// 2em -> margins above and under the divider
 		divider: 2,
-		label: 	__('Add Media Ratio field to all media files?', 'zu-media'),
+		label: 	__('Add Media Ratio field to all media files', 'zu-media'),
 		help:	__('The media ratio will be calculated based on current sizes. Can be used in image selections.', 'zu-media'),
 	},
 	add_category: {
-		label: 	__('Add Category for Media Library?', 'zu-media'),
+		label: 	__('Add Category for Media Library', 'zu-media'),
 		help:	__('The existing categories (used for posts and pages) will be used for images as well.', 'zu-media'),
 	},
 	add_tags: {
-		label: 	__('Add Tags for Media Library?', 'zu-media'),
+		label: 	__('Add Tags for Media Library', 'zu-media'),
 		help:	__('The existing tags (used for posts and pages) will be used for images as well.', 'zu-media'),
 	},
 	add_location: {
-		label: 	__('Add Location for Media Library?', 'zu-media'),
+		label: 	__('Add Location for Media Library', 'zu-media'),
 		help:	__('Creates a new category which will be used only for Media Libaray.', 'zu-media'),
 	},
 	admin_colors: {
@@ -46,16 +46,27 @@ const options = {
 		help: __('You can change it in [Your Profile](/wp-admin/profile.php)', 'zu-media'),
 	},
 	disable_cache: {
-		label: 	__('Disable Cache?', 'zu-media'),
+		label: 	__('Disable Cache', 'zu-media'),
 		help: __('Disabling caching will result in memory savings, but very small (not recommended).', 'zu-media'),
 	},
 	// не реализовано еще
 	svg: {
-		label: 	__('Include SVG support?', 'zu-media'),
+		label: 	__('Include SVG support', 'zu-media'),
 		help:	__('It includes SVG upload and using SVG in "Add Media" dialog boxes.', 'zu-media'),
 		depends: false,
 	},
 };
+
+const rewrite = {
+	add_folders_rewrite: __('Add folders rewrite rule', 'zu-media'),
+	add_folders_rewrite_help: __('You can create rewrite rule for the *folders* page.\nThe creation of the template for this page is **completely** on you.', 'zu-media'),
+	folders_rewrite: __('Tag to be used in rewrite rule for "Folders"', 'zu-media'),
+	tag_rewrite: __('Tag to be used in rewrite rule for "Media Tags"', 'zu-media'),
+	category_rewrite: __('Tag to be used in rewrite rule for "Media Category"', 'zu-media'),
+	note: __('Here you can change the rewrite rules. Do this only if you **absolutely** understand exactly why and what you are doing.\nAfter the changes, I recommend to reset all rewrite rules with "Flush Rewrite Rules" button.', 'zu-media'),
+	resetRules: __('Reset Rewrite Rules', 'zu-media'),
+};
+
 
 const galleryType = {
 	id: 'gallery_type',
@@ -123,20 +134,24 @@ const folderTreeData = {
 
 const folders = {
 	non_empty: {
-		label: 	__('Delete a non-empty folders?', 'zu-media'),
+		label: 	__('Delete a non-empty folders', 'zu-media'),
 		help:	__('It allows to delete non-empty folders, all files in the deleted folder will be moved to the root one.', 'zu-media'),
 	},
 	hide_root: {
-		label: 	__('Hide tree root?', 'zu-media'),
+		label: 	__('Hide tree root', 'zu-media'),
 		help:	__('The tree root "Media Library" will be hidden and not available for drag & drop.', 'zu-media'),
 	},
 	root_icon: {
-		label: 	__('Special icon for the root?', 'zu-media'),
+		label: 	__('Special icon for the root', 'zu-media'),
 		help:	__('The icon for the tree root "Media Library" will be different from all other folders in the tree.', 'zu-media'),
 		depends: '!hide_root',
 	},
+	inherit_privacy: {
+		label: 	__('Inherit folder privacy', 'zu-media'),
+		help:	__('Folders that are inside private folders will also be considered private.', 'zu-media'),
+	},
 	colored_tree: {
-		label: 	__('Use colored folders in tree?', 'zu-media'),
+		label: 	__('Use colored folders in tree', 'zu-media'),
 		help:	__('Folder icons will be displayed in the tree according to the assigned color.', 'zu-media'),
 	},
 	boxed: {
@@ -159,18 +174,25 @@ const panels = {
 	folders: {
 		value: true,
 		label: 	__('Media Folders', 'zu-media'),
-		// Это позволит исключить эту панель когда значение option is false
+		// this will exclude this panel when option is false
 		depends: 'folders',
+	},
+	rewrite: {
+		value: true,
+		label: 	__('Rewrite Rules', 'zu-media'),
+		depends: ['folders', 'add_tags', 'add_category'],
 	},
 	sizes: {
 		value: true,
 		label: 	__('Media Sizes', 'zu-media'),
 	},
+
 };
 
 export const zumedia = {
 	options,
 	galleryType,
 	folders,
+	rewrite,
 	panels,
 }
