@@ -2,9 +2,10 @@
 // Includes all traits --------------------------------------------------------]
 
 include_once('traits/ajax.php');
-include_once('traits/ratio.php');
 include_once('traits/attachments.php');
+include_once('traits/cached.php');
 include_once('traits/location.php');
+include_once('traits/ratio.php');
 
 class zu_Media extends zukit_Plugin  {
 
@@ -12,10 +13,11 @@ class zu_Media extends zukit_Plugin  {
 	private $folders = null;
 	private $dominant = null;
 	private $sizes = null;
+	private $acolors = null;
 	// private $clean = null;
 
 	// Ratio & data, REST API, attachments and location helpers
-	use zu_MediaRatio, zu_MediaAjax, zu_MediaAttachments, zu_MediaLocation;
+	use zu_MediaRatio, zu_MediaAjax, zu_MediaCached, zu_MediaAttachments, zu_MediaLocation;
 
 	protected function config() {
 		return  [
@@ -36,18 +38,20 @@ class zu_Media extends zukit_Plugin  {
 			],
 
 			'options'			=> [
-				'folders'			=> true,
-				'dominant' 			=> true,
-				'add_tags'			=> true,
-				'add_category'		=> false,
-				'add_location'		=> true,
+				'folders'				=> true,
+				'dominant' 				=> true,
+				'add_tags'				=> true,
+				'tag_rewrite'			=> 'media-tag',
+				'add_category'			=> false,
+				'category_rewrite'		=> 'media-cat',
+				'add_location'			=> true,
 
-				'responsive'		=> false,
-				'admin_colors' 		=> false,
-				'media_ratio'		=> false,
-				'gallery_type'		=> 'portfolio',
-				'check_media'		=> false,
-				'disable_cache'		=> false,
+				'responsive'			=> false,
+				'admin_colors' 			=> false,
+				'media_ratio'			=> false,
+				'gallery_type'			=> 'portfolio',
+				'check_media'			=> false,
+				'disable_cache'			=> false,
 			],
 		];
 	}
@@ -106,6 +110,15 @@ class zu_Media extends zukit_Plugin  {
 				'help'		=> __('Clear all cached data referenced to attachments, galleries and folders.'
 									.' Needs if you added gallery or folder.', 'zu-media'),
 				'depends'	=> '!disable_cache',
+			],
+			[
+				'label'		=> __('Flush Rewrite Rules', 'zu-media'),
+				'value'		=> 'zumedia_flush_rewrite',
+				'icon'		=> 'superhero',
+				'color'		=> 'blue',
+				'help'		=> __('Remove rewrite rules and then recreate rewrite rules.'
+									.' Needs if you redefined tag or category rewrite rules.', 'zu-media'),
+				'depends'	=> ['zumedia_folders_options.add_rewrite', 'add_tags', 'add_category'],
 			],
 
 			// пока не поддерживается!
@@ -180,20 +193,58 @@ class zu_Media extends zukit_Plugin  {
 
 		// Admin colors Addon
 		if($this->is_option('admin_colors')) {
-			$this->register_addon(new zu_MediaAdminColors());
+			$this->acolors = $this->register_addon(new zu_MediaAdminColors());
 		}
 
-		// Register or create taxonomies --------------------------------------]
+		// Register or create new taxonomies ----------------------------------]
 
 		if($this->is_option('media_ratio')) $this->init_media_ratio();
-		if($this->is_option('add_category')) register_taxonomy_for_object_type('category', 'attachment');
-		if($this->is_option('add_tags')) register_taxonomy_for_object_type('post_tag', 'attachment');
+		if($this->is_option('add_category')) {
+			$rewrite = $this->get_option('category_rewrite') ?? '';
+			register_taxonomy_for_object_type('category', 'attachment');
+			add_rewrite_rule(
+				"^{$rewrite}/([^/]*)/?",
+				'index.php?post_type=attachment&category=$matches[1]',
+				'top');
+			add_rewrite_tag("%{$rewrite}%", '([^&]+)');
+		}
+		if($this->is_option('add_tags')) {
+			$rewrite = $this->get_option('tag_rewrite') ?? '';
+			register_taxonomy_for_object_type('post_tag', 'attachment');
+			add_rewrite_rule(
+				"^{$rewrite}/([^/]*)/?",
+				'index.php?post_type=attachment&tag=$matches[1]',
+				'top');
+			add_rewrite_tag("%{$rewrite}%", '([^&]+)');
+		}
 		if($this->is_option('add_location')) $this->register_location();
 
 		// Some internal 'inits' ----------------------------------------------]
 
 		$this->init_cachekeys();
 		$this->init_baseurl();
+		$this->register_snippets();
+	}
+
+	// Reset admin color scheme -----------------------------------------------]
+
+	protected function construct_more() {
+		$this->safe_admin_color_scheme(true);
+	}
+
+	protected function on_deactivation() {
+		$this->safe_admin_color_scheme();
+	}
+
+	// reset admin color scheme if 'Admin colors' add-on was deactivated
+	private function safe_admin_color_scheme($on_plugins_loaded = false) {
+		if($on_plugins_loaded) {
+			add_action('plugins_loaded', function() {
+				zu_MediaAdminColors::maybe_clean_color_scheme($this->is_option('admin_colors'));
+			});
+		} else {
+			zu_MediaAdminColors::maybe_clean_color_scheme();
+		}
 	}
 
 	// Custom menu position ---------------------------------------------------]
@@ -238,53 +289,34 @@ class zu_Media extends zukit_Plugin  {
 		}
 	}
 
-	// Dominant Colors --------------------------------------------------------]
+	// Public snippets --------------------------------------------------------]
 
-	public function get_dominant_by_id($post_or_attachment_id = null) {
-		if($this->dominant) {
-			$attachment_id = $this->snippets('get_attachment_id', $post_or_attachment_id);
-			return $this->dominant->get_dominant_by_attachment_id($attachment_id);
-		} else {
-			return zu_MediaDominant::default_color();
-		}
-	}
+	private function register_snippets() {
+		$this->register_snippet('get_dominant_by_id', $this->dominant, $this->snippets('get_default_background_color'));
+		$this->register_snippet('update_dominant_by_id', $this->dominant, false);
+		$this->register_snippet('media_size_full_key', $this->sizes, 'full');
 
-	public function update_dominant_by_id($post_or_attachment_id = null) {
-		if($this->dominant) {
-			$attachment_id = $this->snippets('get_attachment_id', $post_or_attachment_id);
-			return $this->dominant->update_dominant_by_attachment_id($attachment_id);
-		} else {
-			return false;
-		}
-	}
+		$this->register_snippet('get_folders', $this->folders, null);
+		$this->register_snippet('get_folder', $this->folders, null);
+		$this->register_snippet('get_folder_props', $this->folders, null);
+		$this->register_snippet('get_folder_by_attachment_id', $this->folders, null);
 
-	// Image Sizes ------------------------------------------------------------]
+		$this->register_snippet('get_galleries', $this->folders, []);
+		$this->register_snippet('get_gallery_by_attachment_id', $this->folders, []);
+		$this->register_snippet('get_all_images_in_folder', $this->folders, []);
+		$this->register_snippet('get_all_images', $this->folders, []);
 
-	public function media_size_full_key() {
-		return $this->sizes->full_key;
-	}
+		$this->register_snippet('get_folder_permalink', $this->folders, false);
+		$this->register_snippet('folder_exists', $this->folders, false);
+		$this->register_snippet('is_private_folder', $this->folders, false);
+		$this->register_snippet('is_private_image', $this->folders, false);
 
-	// Folders & Galleries ----------------------------------------------------]
+		$this->register_snippet('get_all_landscaped', $this, []);
+		$this->register_snippet('is_landscape', $this, true);
+		$this->register_snippet('is_landscape_ratio', $this, true);
 
-	public function get_folders() {
-		return $this->folders ? $this->folders->get_folders() : [];
-	}
-	public function get_folder_by_id($folder_id) {
-		return $this->folders ? $this->folders->get_folder_by_id($folder_id) : [];
-	}
-	public function get_folder_by_attachment_id($attachment_id) {
-		return $this->folders ? $this->folders->get_folder_by_image_id($attachment_id) : [];
-	}
-	public function is_private_folder($folder_id) {
-		if(!$this->folders) return false;
-		$folder = $this->folders->get_folder_by_id($folder_id);
-		return empty($folder) ? false : $this->folders->is_private_folder($folder);
-	}
-	public function get_galleries($post_id = null) {
-		return $this->folders ? $this->folders->get_galleries($post_id) : [];
-	}
-	public function get_gallery_by_attachment_id($attachment_id) {
-		return $this->folders ? $this->folders->get_gallery_by_image_id($attachment_id) : [];
+		$this->register_snippet('get_location');
+		$this->register_snippet('get_media_taxonomy_link');
 	}
 }
 
@@ -308,13 +340,13 @@ require_once('media-folders/zumedia-folders.php');
 if(!function_exists('mplus_instance')) {
 
 	function mplus_get_album_by_id($folder_id, $get_parent_from = []) {
-		return zumedia()->folder_by_id($folder_id, $get_parent_from); }
+		return zumedia()->snippets('folder_by_id', $folder_id, $get_parent_from); }
 
 	function mplus_check_landscape($width, $height, $limit = '3:2') {
-		return zumedia()->is_landscape_ratio($width, $height, $limit); }
+		return zumedia()->snippets('is_landscape_ratio', $width, $height, $limit); }
 
 	// function mplus_get_defaults() { return mplus_instance()->defaults(); }
 
 	function mplus_get_dominant_by_id($post_or_attachment_id) {
-		return zumedia()->get_dominant_by_id($post_or_attachment_id); }
+		return zumedia()->snippets('get_dominant_by_id', $post_or_attachment_id); }
 }

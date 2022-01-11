@@ -3,7 +3,7 @@
 const { get, mapKeys, omit, find } = lodash;
 const { __ } = wp.i18n;
 const { RangeControl, ColorPalette, BaseControl } = wp.components;
-const { useCallback } = wp.element;
+const { useCallback, useEffect } = wp.element;
 
 // Zukit dependencies
 
@@ -44,6 +44,8 @@ const ZumediaFolders = ({
 		data,
 		options,
 		updateOptions,
+		ajaxAction,
+		setUpdateHook,
 }) => {
 
 	const folders = get(options, optionsKey, {});
@@ -55,6 +57,14 @@ const ZumediaFolders = ({
 	const setColor = useCallback(color => {
 		updateFolderOptions({ color: getColor(data.colors, color) });
 	}, [data.colors, updateFolderOptions]);
+
+	// reset cached collections when 'inherit_privacy' option is updated
+	useEffect(() => {
+		setUpdateHook([`${optionsKey}.inherit_privacy`], () => {
+			ajaxAction('zumedia_reset_cached_collections');
+		});
+
+	}, [setUpdateHook, ajaxAction]);
 
 	if(options['folders'] === false) return null;
 
