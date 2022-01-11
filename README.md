@@ -1,7 +1,7 @@
 # Zu Media: Media Library with folders and more.
 
-[![WordPress Plugin Version](https://img.shields.io/wordpress/plugin/v/zu-media?style=for-the-badge)]()
-[![WordPress Plugin: Tested WP Version](https://img.shields.io/wordpress/plugin/tested/zu-media?color=4ab866&style=for-the-badge)]()
+[![WordPress Plugin Version](https://img.shields.io/wordpress/plugin/v/zu-media?style=for-the-badge)](https://wordpress.org/plugins/zu-media/)
+[![WordPress Plugin: Tested WP Version](https://img.shields.io/wordpress/plugin/tested/zu-media?color=4ab866&style=for-the-badge)](https://wordpress.org)
 [![WordPress Plugin Required PHP Version](https://img.shields.io/wordpress/plugin/required-php/zu-media?color=bc2a8d&style=for-the-badge)](https://www.php.net/)
 [![License](https://img.shields.io/github/license/picasso/zu-media?color=fcbf00&style=for-the-badge)](https://github.com/picasso/zu-media/blob/master/LICENSE)
 
@@ -54,7 +54,7 @@ This plugin includes several enhancements to the WordPress Media Library that ca
 
 ## Download
 
-<!-- + [Zu Media on WordPress.org](https://downloads.wordpress.org/plugin/zu-media.zip) -->
++ [Zu Media on WordPress.org](https://downloads.wordpress.org/plugin/zu-media.zip)
 + [Zu Media on GitHub](https://github.com/picasso/zu-media/archive/master.zip)
 
 ## Installation
@@ -71,17 +71,12 @@ Basically, using the API to access plugin methods is not meant for casual users.
 
 + __get_dominant_by_id(`$post_or_attachment_id = null`)__
 + __update_dominant_by_id(`$post_or_attachment_id = null`)__
-- __get_ratio(`$post_or_attachment_id = null`)__
 - __is_landscape(`$post_or_attachment_id = null`, `$limit = '3:2'`)__
 * __get_folders()__
-* __get_folder_by_id(`$folder_id`)__
+* __get_folder(`$folder_id`)__
 * __get_folder_by_attachment_id(`$attachment_id`)__
-* __is_private_folder(`$folder_id`)__
 + __get_galleries(`$post_id = null`)__
 + __get_gallery_by_attachment_id(`$attachment_id`)__
-- __attachment_id_from_class_or_url(`$image`)__
-- __media_size_full_key()__
-
 
 Since `Zu Media` plugin is based on the singleton concept, you can access all of its public methods using the special function `zumedia`, which returns a static `instance` of the plugin class.
 
@@ -110,7 +105,7 @@ $is_landscape = zumedia()->is_landscape(283, '16:9');
 // get all folders data
 $folders = zumedia()->get_folders();
 // get folder data for the ID
-$folder = zumedia()->get_folder_by_id(4);
+$folder = zumedia()->get_folder(4);
 // check if folder with the ID is 'private'
 $is_private = zumedia()->is_private_folder(4);
 
@@ -121,12 +116,6 @@ $galleries = zumedia()->get_galleries(283);
 // get gallery for the attachment ID (empty array will be returned if no gallery found)
 $gallery = zumedia()->get_gallery_by_attachment_id(67);
 
-// get the attachment ID from image tag (first will be checked class and then image url)
-// when tag has 'wp-image-*' class
-// $tag = '<img src="http://mysite.com/wp-content/uploads/2020/07/next-1024x606.jpg" alt="" class="wp-image-779"/>';
-// when tag does not have 'wp-image-*' class then url will be used to find out the attachment ID
-// $tag = '<img src="http://mysite.com/wp-content/uploads/2020/05/testimage-400x240.jpg"/>';
-$attachment_id = zumedia()->attachment_id_from_class_or_url($tag);
 
 ```
 

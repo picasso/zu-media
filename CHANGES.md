@@ -1,3 +1,34 @@
+### 2.3.0 ###
+* adapted to WordPress 5.8.2
+* reset admin color scheme if `Admin colors` add-on or the plugin was deactivated
+* implemented `get_folder_permalink`, `get_folder_props` and `folder_exists` methods
+* implemented `get_dominant_by_id` and `update_dominant_by_id` methods
+* implemented `get_media_taxonomy_link` method which could be used to get link for Media Taxonomy
+* implemented `Rewrite Rules` panel
+* implemented `Flush Rewrite Rules` action and options to redefine rewrite rules for Media tags and category
+* added `inherit_privacy` option
+* added `get_all_images` method to return all public or private images in folders
+* register some methods to be used as `snippets`
+
+* refactoring `whenReady` into `whenNodeInserted`
+* refactoring dominant color to work with local path instead of link
+* refactoring `folders` error handling
+* refactoring public snippets with `register_snippet` method
+
+* changed structure of cached folders - now `id` is array index
+* renaming `zu-location-link` class to `location-link`
+* renaming `get_folder_by_image_id` to `get_folder_by_attachment_id`
+* renaming `get_gallery_by_image_id` to `get_gallery_by_attachment_id`
+
+* replacing deprecated jQuery methods
+* fixed bugs when thumb width or height is 0
+* fixed bug with wrong `Attachments Wrapper` selector
+* fixed bug in `is_private_image` method
+* fixed bug in `reset_cached` for collections
+* fixed bug in `landscaped` field
+* fixed bug when displaying the wrong WP width size
+* other small improvements
+
 #### 2.2.3 / 2021-05-03
 * __Zukit__ updated to version 1.2.3
 * modified `Sizes` table according to the changes in __Zukit__
