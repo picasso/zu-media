@@ -1,3 +1,8 @@
+### 2.3.2 ###
+* __Zukit__ updated to version 1.5.2
+* tested for compatibility with WP 5.9.0
+* changed `ecmaVersion` to 11
+
 ### 2.3.1 ###
 * tested for compatibility with WP 5.8.3
 
