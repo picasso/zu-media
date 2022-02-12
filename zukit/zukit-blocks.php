@@ -16,11 +16,11 @@ class zukit_Blocks extends zukit_Addon {
 	private $handle = null;
 	private $namespace = null;
 
+	// handler for Zukit common JS with utilities and components
+	public static $zukit_handle = 'zukit-blocks';
 	// We can only have one 'zukit-blocks' script loaded and therefore
     // store its status in a static property so that we can avoid repeated 'enqueue' calls.
     private static $zukit_loaded = false;
-	// handler for Zukit common JS with utilities and components
-	private static $zukit_handle = 'zukit-blocks';
 	// filename with common colors that could be available in JS
 	private static $colors_filename = 'zukit-colors';
 	private static $zukit_colors = null;
@@ -302,25 +302,31 @@ class zukit_Blocks extends zukit_Addon {
 		return $this->frontend_names;
 	}
 
-	// used to modify the default Zukit color palette
+	// для того чтобы воспользоваться дополнительными цветами нужно сделать следующее
+	// в конфигурации плагина тема в разделе блокс добавить 'extended_colors' (структуру смотри ниже)
+	// затем в JS использовать метод getColorGetter которому передать имя JS Data для блоков
+	// этот метод вернет функцию которая сможет получать как цвета фреймворка так и добавленные плагином/темой
+
+	// 'extended_colors' is used to modify the default Zukit color palette
 	// the 'filter' key if presented - contains the names of the colors that need to be left in the palette
-	// key 'colors' if presented - contains descriptions of colors that need to be added to the palette
-	protected function extend_block_colors() {}
+	// key 'include' if presented - contains descriptions of colors that need to be added to the palette
 
 	protected function get_colors($framework_only = false) {
 		$colors = $this->get_zukit_colors();
-		$params = $this->array_with_defaults($this->extend_block_colors() ?? [], [
-			'colors'	=> [],
+		$extended = $framework_only ? [] : ($this->get('blocks.extended_colors') ?? []);
+		$params = $this->array_with_defaults($extended, [
+			'include'	=> [],
 			'filter'	=> $framework_only ? self::$basic_colors : null,
 		], true, false);
 		extract($params, EXTR_PREFIX_ALL, 'custom');
-		if(empty($custom_filter) && empty($custom_colors)) return [];
+		if(empty($custom_filter) && empty($custom_include)) return [];
 
 		// if color is just an alias on an already existing color - just make a substitution
-		foreach($custom_colors as $name => $color) {
+		foreach($custom_include as $name => $color) {
 			$colors[$name] = $colors[$color] ?? $color;
 		}
-		$colors = $this->snippets('array_pick_keys', $colors, $custom_filter ?? array_keys($custom_colors));
+
+		$colors = $this->snippets('array_pick_keys', $colors, $custom_filter ?? array_keys($custom_include));
 		return $framework_only ? $colors : ['colors' => $colors];
 	}
 
