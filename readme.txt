@@ -2,8 +2,8 @@
 Contributors: dmitryrudakov
 Tags: gutenberg, folders, dominant color, admin, media library folders, media library
 Requires at least: 5.3.0
-Tested up to: 5.8.3
-Stable tag: 2.3.1
+Tested up to: 5.9.0
+Stable tag: 2.3.2
 License: GPLv2 or later
 Requires PHP: 7.2.0
 
@@ -55,6 +55,11 @@ This plugin includes several enhancements to the WordPress Media Library that ca
 
 == Changelog ==
 
+### 2.3.2 ###
+* __Zukit__ updated to version 1.5.2
+* tested for compatibility with WP 5.9.0
+* changed `ecmaVersion` to 11
+* cleaning
 ### 2.3.1 ###
 * tested for compatibility with WP 5.8.3
 ### 2.3.0 ###
@@ -160,8 +165,3 @@ This plugin includes several enhancements to the WordPress Media Library that ca
 * added check for `post_parent` in `All Attachements` meta box
 * added `Detach Image` action
 * added `detach_attachment()` function
-### 1.9.1 ###
-* improved CDN support for generated HTML
-### 1.8.9 ###
-* improved `Media Actions` meta box (added spinner to all actions)
-* fixed bug when searching galleries for all `pages`
