@@ -3,7 +3,7 @@ Contributors: dmitryrudakov
 Tags: gutenberg, folders, dominant color, admin, media library folders, media library
 Requires at least: 5.3.0
 Tested up to: 5.9.0
-Stable tag: 2.3.2
+Stable tag: 2.3.3
 License: GPLv2 or later
 Requires PHP: 7.2.0
 
@@ -55,9 +55,10 @@ This plugin includes several enhancements to the WordPress Media Library that ca
 
 == Changelog ==
 
-### 2.3.2 ###
+### 2.3.3 ###
 * __Zukit__ updated to version 1.5.2
 * tested for compatibility with WP 5.9.0
+* fixed CSS of `Settings` (Safari)
 * changed `ecmaVersion` to 11
 * cleaning
 ### 2.3.1 ###

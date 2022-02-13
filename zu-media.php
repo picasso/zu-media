@@ -4,7 +4,7 @@ Plugin Name: Zu Media
 Plugin URI: https://wordpress.org/plugins/zu-media/
 GitHub Plugin URI: https://github.com/picasso/zu-media
 Description: Enhances WordPress Media Library with some features (folders, dominant color, location category and others).
-Version: 2.3.2
+Version: 2.3.3
 Author: Dmitry Rudakov
 Author URI: https://dmitryrudakov.ru/about/
 Text Domain: zumedia

@@ -1,5 +1,6 @@
-### 2.3.2 ###
-* __Zukit__ updated to version 1.5.2
+### 2.3.3 ###
+* __Zukit__ updated to version 1.5.3
+* fixed CSS of `Settings` (Safari)
 * tested for compatibility with WP 5.9.0
 * changed `ecmaVersion` to 11
 
