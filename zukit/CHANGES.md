@@ -1,3 +1,7 @@
+#### 1.5.3 / 2022-02-13
+* fixed CSS of `Settings` (Safari)
+* improved inserting separators in the `Admin Menu`
+
 #### 1.5.2 / 2022-02-09
 
 ##### Debug

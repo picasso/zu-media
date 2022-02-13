@@ -68,7 +68,9 @@ $settings-left-width: 200px;
 $settings-left-min-width: $settings-left-width + 60px;
 $settings-sidebar-icon-size: 36px;
 
-$basic-font-family: 'Open Sans',-apple-system,Roboto,Ubuntu,sans-serif;
+$basic-font-family: 'Open Sans',-apple-system,Ubuntu,Roboto,sans-serif;
+$plugin-font-family: Ubuntu,Roboto,"Open Sans",-apple-system,sans-serif;
+
 $basic-font-size: 14px;
 $basic-line-height: 18px;
 $panel-title-font-size: 15px;

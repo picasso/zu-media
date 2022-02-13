@@ -1,6 +1,6 @@
 {
     "name": "zukit",
-    "version": "1.5.2",
+    "version": "1.5.3",
     "testedWP": "5.9.0",
     "requiresPHP": ">=7.2.0",
     "repository": {
