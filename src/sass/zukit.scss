@@ -19,6 +19,8 @@ $divider-component-class: zukit-divider;
 
 .zukit-settings {
 
+	font-family: $basic-font-family;
+
 	#wpfooter, #update-nag, .update-nag {
 		display: none;
 	}
@@ -231,6 +233,7 @@ $divider-component-class: zukit-divider;
 				border-top-width: 0;
 				border-bottom-width: 0;
 				box-shadow: 0 1px 1px rgba(black, 0.04);
+				margin: 28px auto;
 			}
 
 			.components-panel__body-title .components-button {
@@ -277,7 +280,7 @@ $divider-component-class: zukit-divider;
 					max-width: none;
 					h1 {
 						font-size: $plugin-title-size;
-						font-family: Ubuntu,Roboto,"Open Sans",sans-serif;
+						font-family: $plugin-font-family;
 					}
 					.block-editor-block-icon {
 						width: $plugin-icon-width;
